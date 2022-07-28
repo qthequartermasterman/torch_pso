@@ -1,0 +1,27 @@
+[build-system]
+requires      = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "torch-particle-swarm-optimizer"
+version = "0.0.1"
+description = "Particle Swarm Optimization using the torch.optim API."
+readme = "README.md"
+authors = [{ name = "Andrew Sansom", email = "andrew@euleriancircuit.com" }]
+license = { file = "LICENSE" }
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+keywords = ["pytorch", "optimizer", "particle swarm"]
+dependencies = [
+    "torch"
+]
+requires-python = ">=3.7"
+
+[project.optional-dependencies]
+dev = ["black", "bumpver", "isort", "pip-tools", "pytest"]
+
+[project.urls]
+Homepage = ""
