@@ -1,9 +1,11 @@
 [build-system]
-requires      = ["setuptools>=61.0.0", "wheel"]
-build-backend = "setuptools.build_meta"
+#requires      = ["setuptools>=61.0.0", "wheel"]
+#build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
-name = "torch-particle-swarm-optimizer"
+name = "torch_particle_swarm_optimizer"
 version = "0.0.1"
 description = "Particle Swarm Optimization using the torch.optim API."
 readme = "README.md"
@@ -22,6 +24,3 @@ requires-python = ">=3.7"
 
 [project.optional-dependencies]
 dev = ["black", "bumpver", "isort", "pip-tools", "pytest"]
-
-[project.urls]
-Homepage = ""
