@@ -57,19 +57,29 @@ class Particle:
             new_velocity_params = []
             for p, v, pb, gb, m in zip(position_group_params, velocity_group_params, personal_best_params,
                                        global_best_params, master_params):
+                # print('position group before', position_group, self.position)
                 rand_personal = torch.rand_like(v)
                 rand_group = torch.rand_like(v)
                 new_velocity = (self.inertial_weight * v
                                 + self.cognitive_coefficient * rand_personal * (pb - p)
                                 + self.social_coefficient * rand_group * (gb - p)
                                 )
+                # print('old velocity', v, 'new_velocity', new_velocity)
                 new_velocity_params.append(new_velocity)
                 new_position = p + new_velocity
                 new_position_params.append(new_position)
                 m.data = new_position.data  # Update the model, so we can use it for calculating loss
             position_group['params'] = new_position_params
             velocity_group['params'] = new_velocity_params
+            # print('position group after', position_group, self.position)
+
+        for i in range(len(self.position)):
+            # print(self.param_groups, self.position)
+            for j in range(len(self.param_groups[i]['params'] )):
+                self.param_groups[i]['params'][j].data = self.param_groups[i]['params'][j].data
+
         new_loss = closure()
+        # print('new loss', new_loss)
         if new_loss < self.best_known_loss_value:
             self.best_known_position = clone_param_groups(self.position)
             self.best_known_loss_value = new_loss
@@ -108,7 +118,8 @@ class ParticleSwarmOptimizer(Optimizer):
                     Update the swarm's best known position: g ← pi
     """
 
-    def __init__(self, params, inertial_weight=1., cognitive_coefficient=1., social_coefficient=1., num_particles=100):
+    def __init__(self, params, inertial_weight=1., cognitive_coefficient=1., social_coefficient=1., num_particles=100,
+                 max_param_value=10, min_param_value=-10):
         self.num_particles = num_particles
         self.inertial_weight = inertial_weight
         self.cognitive_coefficient = cognitive_coefficient
@@ -120,7 +131,9 @@ class ParticleSwarmOptimizer(Optimizer):
         self.particles = [Particle(self.param_groups,
                                    self.inertial_weight,
                                    self.cognitive_coefficient,
-                                   self.social_coefficient)
+                                   self.social_coefficient,
+                                   max_param_value=max_param_value,
+                                   min_param_value=min_param_value)
                           for _ in range(self.num_particles)]
 
         self.best_known_global_param_groups = clone_param_groups(self.param_groups)
@@ -142,8 +155,15 @@ class ParticleSwarmOptimizer(Optimizer):
 
         # set the module's parameters to be the best performing ones
         for master_group, best_group in zip(self.param_groups, self.best_known_global_param_groups):
-            master_group['params'] = clone_param_group(best_group)['params']
+            clone = clone_param_group(best_group)['params']
+            for i in range(len(clone)):
+                master_group['params'][i].data = clone[i].data
 
-        print([(i, particle.best_known_loss_value.item()) for i, particle in enumerate(self.particles)])
-        print(self.best_known_global_loss_value.item(), self.best_known_global_param_groups)
+        print()
+        print('best loss', [(i, f'{particle.best_known_loss_value.item():.3f}') for i, particle in enumerate(self.particles)])
+        print('best position', [(i, f'{particle.best_known_position[0]["params"][0].item():.3f}') for i, particle in enumerate(self.particles)])
+        print('current position', [(i, f'{particle.position[0]["params"][0].item():.3f}') for i, particle in enumerate(self.particles)])
+        print('current velocity', [(i, f'{particle.velocity[0]["params"][0].item():.3f}') for i, particle in enumerate(self.particles)])
+        print('global', self.best_known_global_loss_value.item(), self.best_known_global_param_groups)
+
         return closure()  # loss = closure()
