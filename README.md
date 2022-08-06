@@ -6,7 +6,7 @@ the optimization, each particle moves in a random directly while simultaneously 
 in the swarm. A simple introduction to the algorithm can be found on 
 [its Wikipedia article](https://en.wikipedia.org/wiki/Particle_swarm_optimization).
 
-This package implements the Particle Swarm Optimization using the PyTorch Optimization API, making it compatible with 
+This package implements the Particle Swarm Optimization using the PyTorch Optimizer API, making it compatible with 
 most pre-existing Torch training loops.
 
 ## Installation
