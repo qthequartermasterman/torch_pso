@@ -32,7 +32,7 @@ def _initialize_param_groups(param_groups: List[Dict], max_param_value, min_para
     :param param_groups: List of dicts containing param_groups
     :param max_param_value: Maximum value of the parameters in the search space
     :param min_param_value: Minimum value of the parameters in the search space
-    "return"
+    :return the new, initialized param_groups
     """
     magnitude = max_param_value - min_param_value
     mean_value = (max_param_value + min_param_value) / 2
@@ -50,43 +50,43 @@ def _initialize_param_groups(param_groups: List[Dict], max_param_value, min_para
 
 class Particle:
     r"""
-        Algorithm from Wikipedia: https://en.wikipedia.org/wiki/Particle_swarm_optimization
-        Let S be the number of particles in the swarm, each having a position xi ∈ ℝn in the search-space
-        and a velocity vi ∈ ℝn. Let pi be the best known position of particle i and let g be the best known
-        position of the entire swarm.
-        The values blo and bup represent the lower and upper boundaries of the search-space respectively.
-        The w parameter is the inertia weight. The parameters φp and φg are often called cognitive coefficient and
-        social coefficient.
+    Algorithm from Wikipedia: https://en.wikipedia.org/wiki/Particle_swarm_optimization
+    Let S be the number of particles in the swarm, each having a position xi ∈ ℝn in the search-space
+    and a velocity vi ∈ ℝn. Let pi be the best known position of particle i and let g be the best known
+    position of the entire swarm.
+    The values blo and bup represent the lower and upper boundaries of the search-space respectively.
+    The w parameter is the inertia weight. The parameters φp and φg are often called cognitive coefficient and
+    social coefficient.
 
-        The termination criterion can be the number of iterations performed, or a solution where the adequate
-        objective function value is found. The parameters w, φp, and φg are selected by the practitioner and control
-        the behaviour and efficacy of the PSO method.
+    The termination criterion can be the number of iterations performed, or a solution where the adequate
+    objective function value is found. The parameters w, φp, and φg are selected by the practitioner and control
+    the behaviour and efficacy of the PSO method.
 
+    for each particle i = 1, ..., S do
+        Initialize the particle's position with a uniformly distributed random vector: xi ~ U(blo, bup)
+        Initialize the particle's best known position to its initial position: pi ← xi
+        if f(pi) < f(g) then
+            update the swarm's best known position: g ← pi
+        Initialize the particle's velocity: vi ~ U(-|bup-blo|, |bup-blo|)
+    while a termination criterion is not met do:
         for each particle i = 1, ..., S do
-            Initialize the particle's position with a uniformly distributed random vector: xi ~ U(blo, bup)
-            Initialize the particle's best known position to its initial position: pi ← xi
-            if f(pi) < f(g) then
-                update the swarm's best known position: g ← pi
-            Initialize the particle's velocity: vi ~ U(-|bup-blo|, |bup-blo|)
-        while a termination criterion is not met do:
-            for each particle i = 1, ..., S do
-                for each dimension d = 1, ..., n do
-                    Pick random numbers: rp, rg ~ U(0,1)
-                    Update the particle's velocity: vi,d ← w vi,d + φp rp (pi,d-xi,d) + φg rg (gd-xi,d)
-                Update the particle's position: xi ← xi + vi
-                if f(xi) < f(pi) then
-                    Update the particle's best known position: pi ← xi
-                    if f(pi) < f(g) then
-                        Update the swarm's best known position: g ← pi
+            for each dimension d = 1, ..., n do
+                Pick random numbers: rp, rg ~ U(0,1)
+                Update the particle's velocity: vi,d ← w vi,d + φp rp (pi,d-xi,d) + φg rg (gd-xi,d)
+            Update the particle's position: xi ← xi + vi
+            if f(xi) < f(pi) then
+                Update the particle's best known position: pi ← xi
+                if f(pi) < f(g) then
+                    Update the swarm's best known position: g ← pi
 
 
-         :param param_groups: list of dict containing parameters
-         :param inertial_weight: float representing inertial weight of the particles
-         :param cognitive_coefficient: float representing cognitive coefficient of the particles
-         :param social_coefficient: float representing social coefficient of the particles
-         :param max_param_value: Maximum value of the parameters in the search space
-         :param min_param_value: Minimum value of the parameters in the search space
-        """
+    :param param_groups: list of dict containing parameters
+    :param inertial_weight: float representing inertial weight of the particles
+    :param cognitive_coefficient: float representing cognitive coefficient of the particles
+    :param social_coefficient: float representing social coefficient of the particles
+    :param max_param_value: Maximum value of the parameters in the search space
+    :param min_param_value: Minimum value of the parameters in the search space
+    """
 
     def __init__(self,
                  param_groups: List[Dict],
@@ -190,13 +190,13 @@ class ParticleSwarmOptimizer(Optimizer):
                     Update the swarm's best known position: g ← pi
 
 
-     :param params:iterable of parameters to optimize or dicts defining parameter groups
-     :param inertial_weight: float representing inertial weight of the particles
-     :param cognitive_coefficient: float representing cognitive coefficient of the particles
-     :param social_coefficient: float representing social coefficient of the particles
-     :param num_particles: int representing the number of particles in the swarm
-     :param max_param_value: Maximum value of the parameters in the search space
-     :param min_param_value: Minimum value of the parameters in the search space
+    :param params:iterable of parameters to optimize or dicts defining parameter groups
+    :param inertial_weight: float representing inertial weight of the particles
+    :param cognitive_coefficient: float representing cognitive coefficient of the particles
+    :param social_coefficient: float representing social coefficient of the particles
+    :param num_particles: int representing the number of particles in the swarm
+    :param max_param_value: Maximum value of the parameters in the search space
+    :param min_param_value: Minimum value of the parameters in the search space
     """
 
     def __init__(self,
