@@ -22,5 +22,6 @@ dependencies = [
 ]
 requires-python = ">=3.7"
 
-[project.optional-dependencies]
-dev = ["black", "bumpver", "isort", "pip-tools", "pytest"]
+[project.urls]
+repository = "https://github.com/qthequartermasterman/torch_pso"
+
