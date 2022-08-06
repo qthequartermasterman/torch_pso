@@ -106,7 +106,7 @@ class Particle:
         self.cognitive_coefficient = cognitive_coefficient
         self.social_coefficient = social_coefficient
 
-    def step(self, closure: Callable[[], torch.Tensor], global_best_param_groups:List[Dict]) -> torch.Tensor:
+    def step(self, closure: Callable[[], torch.Tensor], global_best_param_groups: List[Dict]) -> torch.Tensor:
         """
         Particle will take one step.
         :param closure: A callable that reevaluates the model and returns the loss.
@@ -200,7 +200,7 @@ class ParticleSwarmOptimizer(Optimizer):
     """
 
     def __init__(self,
-                 params: Iterable[Dict],
+                 params: Iterable[torch.nn.Parameter],
                  inertial_weight: float = 1.,
                  cognitive_coefficient: float = 1.,
                  social_coefficient: float = 1.,
@@ -227,7 +227,7 @@ class ParticleSwarmOptimizer(Optimizer):
         self.best_known_global_loss_value = torch.inf
 
     @torch.no_grad()
-    def step(self, closure: Callable[[], torch.Tensor])->torch.Tensor:
+    def step(self, closure: Callable[[], torch.Tensor]) -> torch.Tensor:
         """
         Performs a single optimization step.
 
