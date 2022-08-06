@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import torch
 
-from torch_particle_swarm_optimizer.ParticleSwarmOptimizer import ParticleSwarmOptimizer
+from torch_pso import ParticleSwarmOptimizer
 
 
 class SquareWeightsModule(torch.nn.Module):

@@ -5,7 +5,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "torch_particle_swarm_optimizer"
+name = "torch_pso"
 version = "0.0.1"
 description = "Particle Swarm Optimization using the torch.optim API."
 readme = "README.md"
