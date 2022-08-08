@@ -41,7 +41,14 @@ class TestParticleSwarmOptimizer(TestCase):
         for _ in range(1000):
             self.optim.step(closure)
 
-        assert torch.allclose(self.net.weights, torch.Tensor([0.]), atol=1e-4, rtol=1e-3), self.net.weights
+        converged = False
+        for _ in range(1000):
+            self.optim.step(closure)
+            if torch.allclose(self.net.weights, torch.Tensor([0.]), atol=1e-4, rtol=1e-3):
+                converged = True
+                break
+
+        assert converged, self.net.weights
 
     def test_quartic_converges(self):
         self.net = QuarticWeightsModule()
@@ -56,8 +63,11 @@ class TestParticleSwarmOptimizer(TestCase):
             self.optim.zero_grad()
             return self.net(None)
 
+        converged = False
         for _ in range(1000):
             self.optim.step(closure)
+            if torch.allclose(abs(self.net.weights), torch.sqrt(torch.Tensor([2]))/2, atol=1e-4, rtol=1e-3):
+                converged = True
+                break
 
-        assert torch.allclose(abs(self.net.weights), torch.sqrt(torch.Tensor([2]))/2,
-                              atol=1e-4, rtol=1e-3), self.net.weights
+        assert converged, self.net.weights
