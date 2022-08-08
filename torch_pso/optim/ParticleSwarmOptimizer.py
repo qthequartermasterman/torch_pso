@@ -201,7 +201,7 @@ class ParticleSwarmOptimizer(Optimizer):
 
     def __init__(self,
                  params: Iterable[torch.nn.Parameter],
-                 inertial_weight: float = 1.,
+                 inertial_weight: float = .9,
                  cognitive_coefficient: float = 1.,
                  social_coefficient: float = 1.,
                  num_particles: int = 100,
@@ -211,6 +211,8 @@ class ParticleSwarmOptimizer(Optimizer):
         self.inertial_weight = inertial_weight
         self.cognitive_coefficient = cognitive_coefficient
         self.social_coefficient = social_coefficient
+        self.max_param_value = max_param_value
+        self.min_param_value = min_param_value
 
         defaults = {}
         super().__init__(params, defaults)
@@ -219,8 +221,8 @@ class ParticleSwarmOptimizer(Optimizer):
                                    self.inertial_weight,
                                    self.cognitive_coefficient,
                                    self.social_coefficient,
-                                   max_param_value=max_param_value,
-                                   min_param_value=min_param_value)
+                                   max_param_value=self.max_param_value,
+                                   min_param_value=self.min_param_value)
                           for _ in range(self.num_particles)]
 
         self.best_known_global_param_groups = clone_param_groups(self.param_groups)
