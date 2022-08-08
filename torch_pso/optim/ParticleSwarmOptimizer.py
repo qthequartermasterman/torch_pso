@@ -201,7 +201,7 @@ class ParticleSwarmOptimizer(Optimizer):
 
     def __init__(self,
                  params: Iterable[torch.nn.Parameter],
-                 inertial_weight: float = 1.,
+                 inertial_weight: float = .9,
                  cognitive_coefficient: float = 1.,
                  social_coefficient: float = 1.,
                  num_particles: int = 100,
