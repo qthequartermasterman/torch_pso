@@ -211,6 +211,8 @@ class ParticleSwarmOptimizer(Optimizer):
         self.inertial_weight = inertial_weight
         self.cognitive_coefficient = cognitive_coefficient
         self.social_coefficient = social_coefficient
+        self.max_param_value = max_param_value
+        self.min_param_value = min_param_value
 
         defaults = {}
         super().__init__(params, defaults)
@@ -219,8 +221,8 @@ class ParticleSwarmOptimizer(Optimizer):
                                    self.inertial_weight,
                                    self.cognitive_coefficient,
                                    self.social_coefficient,
-                                   max_param_value=max_param_value,
-                                   min_param_value=min_param_value)
+                                   max_param_value=self.max_param_value,
+                                   min_param_value=self.min_param_value)
                           for _ in range(self.num_particles)]
 
         self.best_known_global_param_groups = clone_param_groups(self.param_groups)
