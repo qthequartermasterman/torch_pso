@@ -7,6 +7,14 @@ from .ParticleSwarmOptimizer import ParticleSwarmOptimizer, clone_param_group, c
 
 
 class GenerationalPSO(ParticleSwarmOptimizer):
+    """
+    Generational PSO is a modification of the naive Particle Swarm Optimization Algorithm, where a certain percentage of
+    randomly-chosen, low-performing particles are re-initialized after each step.
+
+    This is a sample algorithm designed by Andrew Sansom with the sole purpose of demonstrating an example of
+    alternate PSO algorithms.
+    """
+
     def __init__(self,
                  params: Iterable[torch.nn.Parameter],
                  inertial_weight: float = .9,
