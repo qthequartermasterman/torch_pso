@@ -3,7 +3,8 @@ from typing import Callable, Iterable
 
 import torch
 
-from .ParticleSwarmOptimizer import ParticleSwarmOptimizer, clone_param_group, clone_param_groups, Particle
+from .ParticleSwarmOptimizer import ParticleSwarmOptimizer, Particle
+from .GenericPSO import clone_param_group, clone_param_groups
 
 
 class GenerationalPSO(ParticleSwarmOptimizer):
