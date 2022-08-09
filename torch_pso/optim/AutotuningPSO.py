@@ -15,7 +15,7 @@ class AutotuningPSO(ParticleSwarmOptimizer):
 
     def __init__(self,
                  params: Iterable[torch.nn.Parameter],
-                 num_total_iterations: int,
+                 num_total_iterations: int = 1000,
                  inertial_weight: float = .9,
                  cognitive_coefficient: float = 1.,
                  social_coefficient: float = 1.,

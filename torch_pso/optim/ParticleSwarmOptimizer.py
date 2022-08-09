@@ -3,7 +3,8 @@ from typing import List, Dict, Callable, Iterable
 import torch
 from torch.optim import Optimizer
 
-from torch_pso.optim.GenericPSO import clone_param_group, clone_param_groups, _initialize_param_groups, GenericParticle
+from torch_pso.optim.GenericPSO import clone_param_group, clone_param_groups, _initialize_param_groups, GenericParticle, \
+    GenericPSO
 
 
 class Particle(GenericParticle):
@@ -116,7 +117,7 @@ class Particle(GenericParticle):
         return new_loss
 
 
-class ParticleSwarmOptimizer(Optimizer):
+class ParticleSwarmOptimizer(GenericPSO):
     r"""
     Algorithm from Wikipedia: https://en.wikipedia.org/wiki/Particle_swarm_optimization
     Let S be the number of particles in the swarm, each having a position xi ∈ ℝn in the search-space
@@ -171,39 +172,45 @@ class ParticleSwarmOptimizer(Optimizer):
         self.social_coefficient = social_coefficient
         self.max_param_value = max_param_value
         self.min_param_value = min_param_value
+        kwargs = {'inertial_weight': inertial_weight,
+                  'cognitive_coefficient': cognitive_coefficient,
+                  'social_coefficient': social_coefficient,
+                  'max_param_value': max_param_value,
+                  'min_param_value': min_param_value}
+        super().__init__(params, num_particles, Particle, particle_kwargs=kwargs)
 
-        defaults = {}
-        super().__init__(params, defaults)
-        # print('self.param_groups', self.param_groups)
-        self.particles = [Particle(self.param_groups,
-                                   self.inertial_weight,
-                                   self.cognitive_coefficient,
-                                   self.social_coefficient,
-                                   max_param_value=self.max_param_value,
-                                   min_param_value=self.min_param_value)
-                          for _ in range(self.num_particles)]
+        # defaults = {}
+        # super().__init__(params, defaults)
+        # # print('self.param_groups', self.param_groups)
+        # self.particles = [Particle(self.param_groups,
+        #                            self.inertial_weight,
+        #                            self.cognitive_coefficient,
+        #                            self.social_coefficient,
+        #                            max_param_value=self.max_param_value,
+        #                            min_param_value=self.min_param_value)
+        #                   for _ in range(self.num_particles)]
+        #
+        # self.best_known_global_param_groups = clone_param_groups(self.param_groups)
+        # self.best_known_global_loss_value = torch.inf
 
-        self.best_known_global_param_groups = clone_param_groups(self.param_groups)
-        self.best_known_global_loss_value = torch.inf
-
-    @torch.no_grad()
-    def step(self, closure: Callable[[], torch.Tensor]) -> torch.Tensor:
-        """
-        Performs a single optimization step.
-
-        :param closure: A callable that reevaluates the model and returns the loss.
-        :return: the final loss after the step (as calculated by the closure)
-        """
-        for particle in self.particles:
-            particle_loss = particle.step(closure, self.best_known_global_param_groups)
-            if particle_loss < self.best_known_global_loss_value:
-                self.best_known_global_param_groups = clone_param_groups(particle.position)
-                self.best_known_global_loss_value = particle_loss
-
-        # set the module's parameters to be the best performing ones
-        for master_group, best_group in zip(self.param_groups, self.best_known_global_param_groups):
-            clone = clone_param_group(best_group)['params']
-            for i in range(len(clone)):
-                master_group['params'][i].data = clone[i].data
-
-        return closure()  # loss = closure()
+    # @torch.no_grad()
+    # def step(self, closure: Callable[[], torch.Tensor]) -> torch.Tensor:
+    #     """
+    #     Performs a single optimization step.
+    #
+    #     :param closure: A callable that reevaluates the model and returns the loss.
+    #     :return: the final loss after the step (as calculated by the closure)
+    #     """
+    #     for particle in self.particles:
+    #         particle_loss = particle.step(closure, self.best_known_global_param_groups)
+    #         if particle_loss < self.best_known_global_loss_value:
+    #             self.best_known_global_param_groups = clone_param_groups(particle.position)
+    #             self.best_known_global_loss_value = particle_loss
+    #
+    #     # set the module's parameters to be the best performing ones
+    #     for master_group, best_group in zip(self.param_groups, self.best_known_global_param_groups):
+    #         clone = clone_param_group(best_group)['params']
+    #         for i in range(len(clone)):
+    #             master_group['params'][i].data = clone[i].data
+    #
+    #     return closure()  # loss = closure()

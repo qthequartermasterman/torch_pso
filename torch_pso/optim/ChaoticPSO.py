@@ -137,7 +137,7 @@ class ChaoticParticle(GenericParticle):
 class ChaoticPSO(GenericPSO):
     def __init__(self,
                  params: Iterable[torch.nn.Parameter],
-                 num_particles: int,
+                 num_particles: int = 100,
                  a: float = 0.02,
                  b: float = 0.01,
                  c: float = 0.01,

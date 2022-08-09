@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod, ABCMeta
 from typing import Dict, List, Callable, Type, Iterable, Optional
 
 import torch
@@ -100,3 +100,9 @@ class GenericPSO(Optimizer):
                 master_group['params'][i].data = clone[i].data
 
         return closure()  # loss = closure()
+
+    subclasses = []
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        cls.subclasses.append(cls)
