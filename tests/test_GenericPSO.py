@@ -1,5 +1,8 @@
+from typing import List
+
 import pytest
 import torch
+from torch import Tensor
 
 from torch_pso import OPTIMIZERS
 
@@ -43,7 +46,17 @@ class RastriginModule(torch.nn.Module):
 
     def forward(self, x):
         x = self.weights
-        return self.A * self.num_dimensions + (x**2 - self.A * torch.cos(2*torch.pi*x)).sum()
+        return self.A * self.num_dimensions + (x ** 2 - self.A * torch.cos(2 * torch.pi * x)).sum()
+
+
+class HimmelblauModule(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.weights = torch.nn.Parameter(torch.rand((2,)))
+
+    def forward(self, x):
+        x, y = self.weights
+        return (x ** 2 + y - 11) ** 2 + (x + y ** 2 - 7) ** 2
 
 
 @pytest.mark.parametrize('optimizer_type', OPTIMIZERS)
@@ -200,6 +213,40 @@ def test_rastrigin10_converges(optimizer_type):
     for _ in range(4000):
         optim.step(closure)
         if torch.allclose(net.weights, global_minimum, atol=1e-3, rtol=1e-2):
+            converged = True
+            break
+
+    assert converged, net.weights
+
+
+@pytest.mark.parametrize('optimizer_type', OPTIMIZERS)
+def test_himmelblau_converges(optimizer_type):
+    if optimizer_type.__name__ in ['RingTopologyPSO', 'GenerationalPSO', 'ChaoticPSO']:
+        # These PSO algorithms converge very slowly on this problem
+        return
+    net = HimmelblauModule()
+    optim = optimizer_type(net.parameters())
+
+    global_minima = [torch.Tensor([3., 2.]),
+                     torch.Tensor([-2.805118, 3.131312]),
+                     torch.Tensor([-3.779310, -3.283186]),
+                     torch.Tensor([3.584428, -1.848126]),
+                     ]
+
+    def close_to_a_minimum(x, minima: List[Tensor]) -> bool:
+        return any(torch.allclose(x, m, atol=1e-4, rtol=1e-3) for m in minima)
+
+    def closure():
+        optim.zero_grad()
+        return net(None)
+
+    # Make sure we don't start out satisfying the condition
+    assert not close_to_a_minimum(net.weights, global_minima)
+
+    converged = False
+    for _ in range(4000):
+        optim.step(closure)
+        if close_to_a_minimum(net.weights, global_minima):
             converged = True
             break
 
