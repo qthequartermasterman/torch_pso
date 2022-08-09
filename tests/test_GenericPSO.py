@@ -13,6 +13,7 @@ class SquareWeightsModule(torch.nn.Module):
         x = self.weights
         return x ** 2
 
+
 class SquarePlus2WeightsModule(torch.nn.Module):
     def __init__(self):
         super().__init__()
@@ -20,7 +21,7 @@ class SquarePlus2WeightsModule(torch.nn.Module):
 
     def forward(self, x):
         x = self.weights
-        return (x+2) ** 2
+        return (x + 2) ** 2
 
 
 class QuarticWeightsModule(torch.nn.Module):
@@ -31,6 +32,18 @@ class QuarticWeightsModule(torch.nn.Module):
     def forward(self, x):
         x = self.weights
         return x ** 2 * (x ** 2 - 1)
+
+
+class RastriginModule(torch.nn.Module):
+    def __init__(self, num_dimensions, a=10.):
+        super().__init__()
+        self.weights = torch.nn.Parameter(torch.rand((num_dimensions,)))
+        self.num_dimensions = num_dimensions
+        self.A = a
+
+    def forward(self, x):
+        x = self.weights
+        return self.A * self.num_dimensions + (x**2 - self.A * torch.cos(2*torch.pi*x)).sum()
 
 
 @pytest.mark.parametrize('optimizer_type', OPTIMIZERS)
@@ -57,6 +70,7 @@ def test_square_converges(optimizer_type):
             break
 
     assert converged, net.weights
+
 
 @pytest.mark.parametrize('optimizer_type', OPTIMIZERS)
 def test_square_plus_2_converges(optimizer_type):
@@ -104,6 +118,88 @@ def test_quartic_converges(optimizer_type):
     for _ in range(10000):
         optim.step(closure)
         if torch.allclose(abs(net.weights), torch.sqrt(torch.Tensor([2])) / 2, atol=1e-3, rtol=1e-2):
+            converged = True
+            break
+
+    assert converged, net.weights
+
+
+@pytest.mark.parametrize('optimizer_type', OPTIMIZERS)
+def test_rastrigin_converges(optimizer_type):
+    if optimizer_type.__name__ == 'RingTopologyPSO':
+        # Ring Topology PSO converges SUPER slowly on a simple quadratic function.
+        # Sufficiently so that even passing this test is hit or miss
+        return
+    net = RastriginModule(num_dimensions=1)
+    optim = optimizer_type(net.parameters())
+
+    global_minimum = torch.zeros_like(net.weights)
+
+    def closure():
+        optim.zero_grad()
+        return net(None)
+
+    # Make sure we don't start out satisfying the condition
+    assert not torch.allclose(net.weights, global_minimum, atol=1e-4, rtol=1e-3)
+
+    converged = False
+    for _ in range(10000):
+        optim.step(closure)
+        if torch.allclose(net.weights, global_minimum, atol=1e-3, rtol=1e-2):
+            converged = True
+            break
+
+    assert converged, net.weights
+
+
+@pytest.mark.parametrize('optimizer_type', OPTIMIZERS)
+def test_rastrigin3_converges(optimizer_type):
+    if optimizer_type.__name__ in ['RingTopologyPSO', 'GenerationalPSO', 'ChaoticPSO']:
+        # These PSO algorithms converge very slowly on this problem
+        return
+    net = RastriginModule(num_dimensions=3)
+    optim = optimizer_type(net.parameters())
+
+    global_minimum = torch.zeros_like(net.weights)
+
+    def closure():
+        optim.zero_grad()
+        return net(None)
+
+    # Make sure we don't start out satisfying the condition
+    assert not torch.allclose(net.weights, global_minimum, atol=1e-4, rtol=1e-3)
+
+    converged = False
+    for _ in range(1000):
+        optim.step(closure)
+        if torch.allclose(net.weights, global_minimum, atol=1e-3, rtol=1e-2):
+            converged = True
+            break
+
+    assert converged, net.weights
+
+
+@pytest.mark.parametrize('optimizer_type', OPTIMIZERS)
+def test_rastrigin10_converges(optimizer_type):
+    if optimizer_type.__name__ in ['ParticleSwarmOptimizer', 'RingTopologyPSO', 'GenerationalPSO', 'ChaoticPSO']:
+        # These PSO algorithms converge very slowly on this problem
+        return
+    net = RastriginModule(num_dimensions=10)
+    optim = optimizer_type(net.parameters())
+
+    global_minimum = torch.zeros_like(net.weights)
+
+    def closure():
+        optim.zero_grad()
+        return net(None)
+
+    # Make sure we don't start out satisfying the condition
+    assert not torch.allclose(net.weights, global_minimum, atol=1e-4, rtol=1e-3)
+
+    converged = False
+    for _ in range(4000):
+        optim.step(closure)
+        if torch.allclose(net.weights, global_minimum, atol=1e-3, rtol=1e-2):
             converged = True
             break
 
