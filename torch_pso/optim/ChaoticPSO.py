@@ -1,12 +1,12 @@
-from typing import Callable, List, Dict
+from typing import Callable, List, Dict, Iterable
 
 import torch
 from torch.optim import Optimizer
 
-from .ParticleSwarmOptimizer import Particle, ParticleSwarmOptimizer, _initialize_param_groups, clone_param_groups
+from .GenericPSO import clone_param_groups, _initialize_param_groups, GenericParticle, GenericPSO
 
 
-class ChaoticParticle:
+class ChaoticParticle(GenericParticle):
     def __init__(self,
                  param_groups,
                  a: float,
@@ -90,7 +90,6 @@ class ChaoticParticle:
                                                    personal_best_params,
                                                    global_best_params,
                                                    master_params):
-
                 # rand_personal = torch.rand_like(u)
                 # rand_group = torch.rand_like(u)
                 # new_velocity = (self.inertial_weight * u
@@ -99,15 +98,15 @@ class ChaoticParticle:
                 #                 )
                 # new_position = x + new_velocity
 
-                delta_u = -(2*self.a * (x-gb) + 2*self.c*(x-x_ip))/(1 + self.k * (self.a + self.b))
+                delta_u = -(2 * self.a * (x - gb) + 2 * self.c * (x - x_ip)) / (1 + self.k * (self.a + self.b))
                 new_velocity = u + delta_u - self._z * (x - self.i0)
                 new_position = torch.clamp(self.k * new_velocity, min=0, max=1)
 
-                delta_u_ip = -(2*self.b * (x-pb) + 2*self.c*(x-x_ip))/(1 + self.k * (self.b + self.c))
-                new_u_ip = u_ip + delta_u_ip - self._z * (x_ip-self.i0)
+                delta_u_ip = -(2 * self.b * (x - pb) + 2 * self.c * (x - x_ip)) / (1 + self.k * (self.b + self.c))
+                new_u_ip = u_ip + delta_u_ip - self._z * (x_ip - self.i0)
                 new_x_ip = torch.clamp(self.k * new_u_ip, min=0, max=1)
 
-                self._z *= 1-self.beta
+                self._z *= 1 - self.beta
 
                 new_velocity_params.append(new_velocity)
                 new_position_params.append(new_position)
@@ -135,6 +134,27 @@ class ChaoticParticle:
         return new_loss
 
 
-class ChaoticPSO(ParticleSwarmOptimizer):
-    def __init__(self):
-        super(Optimizer, self)
+class ChaoticPSO(GenericPSO):
+    def __init__(self,
+                 params: Iterable[torch.nn.Parameter],
+                 num_particles: int,
+                 a: float = 0.02,
+                 b: float = 0.01,
+                 c: float = 0.01,
+                 beta: float = .001,
+                 k: float = 15,
+                 epsilon: float = 1.,
+                 i0: float = 0.2,
+                 max_param_value: float = -10,
+                 min_param_value: float = 10):
+        particle_kwargs = {'a': a,
+                           'b': b,
+                           'c': c,
+                           'beta': beta,
+                           'k': k,
+                           'epsilon': epsilon,
+                           'i0': i0,
+                           'max_param_value': max_param_value,
+                           'min_param_value': min_param_value,
+                           }
+        super().__init__(params, num_particles, particle_class=ChaoticParticle, particle_kwargs=particle_kwargs)

@@ -2,7 +2,8 @@ from typing import Callable, Iterable, List, Dict
 
 import torch
 
-from .ParticleSwarmOptimizer import ParticleSwarmOptimizer, clone_param_group, clone_param_groups
+from .ParticleSwarmOptimizer import ParticleSwarmOptimizer
+from .GenericPSO import clone_param_group, clone_param_groups
 
 
 class RingTopologyPSO(ParticleSwarmOptimizer):
