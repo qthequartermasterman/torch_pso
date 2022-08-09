@@ -147,6 +147,17 @@ class ChaoticParticle(GenericParticle):
 
 
 class ChaoticPSO(GenericPSO):
+    """
+    ChaoticPSO is a variation on the original Particle Swarm Optimization inspired by techniques in training
+    Hopfield Networks. It introduces some chaos-like mechanics into the optimization, theoretically improving
+    convergence speed in some contexts.
+
+    Original Paper:
+    Sun, Yanxia & Qi, Guoyuan & Wang, Zenghui & Van Wyk, Barend & Hamam, Yskandar. (2009). Chaotic particle
+    swarm optimization. 505-510. 10.1145/1543834.1543902.
+
+    https://www.researchgate.net/publication/220741402_Chaotic_particle_swarm_optimization
+    """
     def __init__(self,
                  params: Iterable[torch.nn.Parameter],
                  num_particles: int = 100,
