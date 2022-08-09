@@ -67,7 +67,7 @@ def test_quartic_converges(optimizer_type):
     assert not torch.allclose(abs(net.weights), torch.sqrt(torch.Tensor([2])) / 2, atol=1e-4, rtol=1e-3)
 
     converged = False
-    for _ in range(1000):
+    for _ in range(10000):
         optim.step(closure)
         if torch.allclose(abs(net.weights), torch.sqrt(torch.Tensor([2])) / 2, atol=1e-3, rtol=1e-2):
             converged = True
