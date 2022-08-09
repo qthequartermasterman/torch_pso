@@ -1,0 +1,140 @@
+from typing import Callable, List, Dict
+
+import torch
+from torch.optim import Optimizer
+
+from .ParticleSwarmOptimizer import Particle, ParticleSwarmOptimizer, _initialize_param_groups, clone_param_groups
+
+
+class ChaoticParticle:
+    def __init__(self,
+                 param_groups,
+                 a: float,
+                 b: float,
+                 c: float,
+                 beta: float,
+                 k: float,
+                 epsilon: float,
+                 i0: float,
+                 max_param_value: float,
+                 min_param_value: float):
+        if a <= 0:
+            raise ValueError(f'A must be a positive constant, not of value {a}.')
+        if b <= 0:
+            raise ValueError(f'B must be a positive constant, not of value {b}.')
+        if c <= 0:
+            raise ValueError(f'C must be a positive constant, not of value {c}.')
+        if not 0 < beta < 1:
+            raise ValueError(f'Beta must be a positive constant, not of value {beta}.')
+
+        self.param_groups = param_groups
+        self.a = a
+        self.b = b
+        self.c = c
+        self.beta = beta
+        self.k = k
+        self.i0 = i0
+        self.epsilon = epsilon
+        self._z = 1  # This value is never specified in the paper.
+
+        magnitude = abs(max_param_value - min_param_value)
+        self.position = _initialize_param_groups(param_groups, max_param_value, min_param_value)
+        self.velocity = _initialize_param_groups(param_groups, magnitude, -magnitude)
+        # I'm not sure what x_ip and u_ip represent, but their iterations are defined mathematically
+        # Their initial values are not defined, however
+        self.x_ip = _initialize_param_groups(param_groups, max_param_value, min_param_value)
+        self.u_ip = _initialize_param_groups(param_groups, magnitude, -magnitude)
+
+        self.best_known_position = clone_param_groups(self.position)
+        self.best_known_loss_value = torch.inf
+
+    def step(self, closure: Callable[[], torch.Tensor], global_best_param_groups: List[Dict]) -> torch.Tensor:
+        """
+        Particle will take one step.
+        :param closure: A callable that reevaluates the model and returns the loss.
+        :param global_best_param_groups: List of param_groups that yield the best found loss globally
+        :return:
+        """
+        # Because our parameters are not a single tensor, we have to iterate over each group, and then each param in
+        # each group.
+        for (position_group,
+             velocity_group,
+             x_ip_group,
+             u_ip_group,
+             personal_best,
+             global_best,
+             master) in zip(self.position,
+                            self.velocity,
+                            self.u_ip,
+                            self.x_ip,
+                            self.best_known_position,
+                            global_best_param_groups,
+                            self.param_groups):
+
+            position_group_params = position_group['params']
+            velocity_group_params = velocity_group['params']
+            x_ip_group_params = x_ip_group['params']
+            u_ip_group_params = u_ip_group['params']
+            personal_best_params = personal_best['params']
+            global_best_params = global_best['params']
+            master_params = master['params']
+
+            new_position_params = []
+            new_velocity_params = []
+            new_x_ip_params = []
+            new_u_ip_params = []
+            for x, u, x_ip, u_ip, pb, gb, m in zip(position_group_params,
+                                                   velocity_group_params,
+                                                   x_ip_group_params,
+                                                   u_ip_group_params,
+                                                   personal_best_params,
+                                                   global_best_params,
+                                                   master_params):
+
+                # rand_personal = torch.rand_like(u)
+                # rand_group = torch.rand_like(u)
+                # new_velocity = (self.inertial_weight * u
+                #                 + self.cognitive_coefficient * rand_personal * (pb - x)
+                #                 + self.social_coefficient * rand_group * (gb - x)
+                #                 )
+                # new_position = x + new_velocity
+
+                delta_u = -(2*self.a * (x-gb) + 2*self.c*(x-x_ip))/(1 + self.k * (self.a + self.b))
+                new_velocity = u + delta_u - self._z * (x - self.i0)
+                new_position = torch.clamp(self.k * new_velocity, min=0, max=1)
+
+                delta_u_ip = -(2*self.b * (x-pb) + 2*self.c*(x-x_ip))/(1 + self.k * (self.b + self.c))
+                new_u_ip = u_ip + delta_u_ip - self._z * (x_ip-self.i0)
+                new_x_ip = torch.clamp(self.k * new_u_ip, min=0, max=1)
+
+                self._z *= 1-self.beta
+
+                new_velocity_params.append(new_velocity)
+                new_position_params.append(new_position)
+                new_x_ip_params.append(new_x_ip)
+                new_u_ip_params.append(new_u_ip)
+                m.data = new_position.data  # Update the model, so we can use it for calculating loss
+            position_group['params'] = new_position_params
+            velocity_group['params'] = new_velocity_params
+            x_ip_group['params'] = new_x_ip_params
+            u_ip_group['params'] = new_u_ip_params
+
+        # Really crummy way to update the parameter weights in the original model.
+        # Simply changing self.param_groups doesn't update the model.
+        # Nor does changing its elements or the raw values of 'param' of the elements.
+        # We have to change the underlying tensor data to point to the new positions
+        for i in range(len(self.position)):
+            for j in range(len(self.param_groups[i]['params'])):
+                self.param_groups[i]['params'][j].data = self.param_groups[i]['params'][j].data
+
+        # Calculate new loss after moving and update the best known position if we're in a better spot
+        new_loss = closure()
+        if new_loss < self.best_known_loss_value:
+            self.best_known_position = clone_param_groups(self.position)
+            self.best_known_loss_value = new_loss
+        return new_loss
+
+
+class ChaoticPSO(ParticleSwarmOptimizer):
+    def __init__(self):
+        super(Optimizer, self)
