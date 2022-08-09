@@ -1,7 +1,6 @@
 from typing import Callable, List, Dict, Iterable
 
 import torch
-from torch.optim import Optimizer
 
 from .GenericPSO import clone_param_groups, _initialize_param_groups, GenericParticle, GenericPSO
 
@@ -36,6 +35,8 @@ class ChaoticParticle(GenericParticle):
         self.i0 = i0
         self.epsilon = epsilon
         self._z = 1  # This value is never specified in the paper.
+        self.max_param_value = max_param_value
+        self.min_param_value = min_param_value
 
         magnitude = abs(max_param_value - min_param_value)
         self.position = _initialize_param_groups(param_groups, max_param_value, min_param_value)
@@ -47,6 +48,12 @@ class ChaoticParticle(GenericParticle):
 
         self.best_known_position = clone_param_groups(self.position)
         self.best_known_loss_value = torch.inf
+
+    def _unit_interval_to_min_max(self, x):
+        return self.min_param_value + x * (self.max_param_value - self.min_param_value)
+
+    def _min_max_to_unit_interval(self, x):
+        return (x - self.min_param_value) / (self.max_param_value - self.min_param_value)
 
     def step(self, closure: Callable[[], torch.Tensor], global_best_param_groups: List[Dict]) -> torch.Tensor:
         """
@@ -97,14 +104,19 @@ class ChaoticParticle(GenericParticle):
                 #                 + self.social_coefficient * rand_group * (gb - x)
                 #                 )
                 # new_position = x + new_velocity
+                # All the below calculations assume x is between 0 and 1
+                x = self._min_max_to_unit_interval(x)
+                x_ip = self._min_max_to_unit_interval(x_ip)
 
                 delta_u = -(2 * self.a * (x - gb) + 2 * self.c * (x - x_ip)) / (1 + self.k * (self.a + self.b))
                 new_velocity = u + delta_u - self._z * (x - self.i0)
                 new_position = torch.clamp(self.k * new_velocity, min=0, max=1)
+                new_position = self._unit_interval_to_min_max(new_position)
 
                 delta_u_ip = -(2 * self.b * (x - pb) + 2 * self.c * (x - x_ip)) / (1 + self.k * (self.b + self.c))
                 new_u_ip = u_ip + delta_u_ip - self._z * (x_ip - self.i0)
                 new_x_ip = torch.clamp(self.k * new_u_ip, min=0, max=1)
+                new_x_ip = self._unit_interval_to_min_max(new_x_ip)
 
                 self._z *= 1 - self.beta
 
