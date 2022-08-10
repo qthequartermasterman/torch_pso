@@ -1,5 +1,5 @@
 import random
-from typing import Callable, Iterable
+from typing import Callable, Iterable, Union
 
 import torch
 
@@ -25,7 +25,7 @@ class GenerationalPSO(ParticleSwarmOptimizer):
                  max_param_value: float = 10.,
                  min_param_value: float = -10.,
                  generational_turnover_ratio: float = .05,
-                 keep_top_performers: float|int = .5):
+                 keep_top_performers: Union[float, int] = .5):
         super().__init__(params, inertial_weight, cognitive_coefficient, social_coefficient, num_particles,
                          max_param_value, min_param_value)
 
