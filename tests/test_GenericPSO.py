@@ -59,6 +59,16 @@ class HimmelblauModule(torch.nn.Module):
         return (x ** 2 + y - 11) ** 2 + (x + y ** 2 - 7) ** 2
 
 
+class GoldsteinPriceModule(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.weights = torch.nn.Parameter(torch.rand((2,)))
+
+    def forward(self, x):
+        x, y = self.weights
+        return (1 + (x+y+1)**2*(19-14*x+3*x**2-14*y+6*x*y+3*y**2))*(30 + (2*x-3*y)**2*(18-32*x+12*x**2+48*y-36*x*y+27*y**2))
+
+
 @pytest.mark.parametrize('optimizer_type', OPTIMIZERS)
 def test_square_converges(optimizer_type):
     if optimizer_type.__name__ == 'RingTopologyPSO':
@@ -78,7 +88,7 @@ def test_square_converges(optimizer_type):
     converged = False
     for _ in range(10000):
         optim.step(closure)
-        if torch.allclose(net.weights, torch.Tensor([0.]), atol=1e-3, rtol=1e-2):
+        if torch.allclose(net.weights, torch.Tensor([0.]), atol=1e-2, rtol=1e-1):
             converged = True
             break
 
@@ -102,9 +112,9 @@ def test_square_plus_2_converges(optimizer_type):
     assert not torch.allclose(net.weights, torch.Tensor([-2.]), atol=1e-4, rtol=1e-3)
 
     converged = False
-    for _ in range(5000):
+    for _ in range(1000):
         optim.step(closure)
-        if torch.allclose(net.weights, torch.Tensor([-2.]), atol=1e-3, rtol=1e-2):
+        if torch.allclose(net.weights, torch.Tensor([-2.]), atol=1e-2, rtol=1e-1):
             converged = True
             break
 
@@ -130,7 +140,7 @@ def test_quartic_converges(optimizer_type):
     converged = False
     for _ in range(10000):
         optim.step(closure)
-        if torch.allclose(abs(net.weights), torch.sqrt(torch.Tensor([2])) / 2, atol=1e-3, rtol=1e-2):
+        if torch.allclose(abs(net.weights), torch.sqrt(torch.Tensor([2])) / 2, atol=1e-2, rtol=1e-1):
             converged = True
             break
 
@@ -158,7 +168,7 @@ def test_rastrigin_converges(optimizer_type):
     converged = False
     for _ in range(10000):
         optim.step(closure)
-        if torch.allclose(net.weights, global_minimum, atol=1e-3, rtol=1e-2):
+        if torch.allclose(net.weights, global_minimum, atol=1e-2, rtol=1e-1):
             converged = True
             break
 
@@ -185,7 +195,7 @@ def test_rastrigin3_converges(optimizer_type):
     converged = False
     for _ in range(1000):
         optim.step(closure)
-        if torch.allclose(net.weights, global_minimum, atol=1e-3, rtol=1e-2):
+        if torch.allclose(net.weights, global_minimum, atol=1e-2, rtol=1e-1):
             converged = True
             break
 
@@ -215,7 +225,7 @@ def test_rastrigin10_converges(optimizer_type):
     converged = False
     for _ in range(10000):
         optim.step(closure)
-        if torch.allclose(net.weights, global_minimum, atol=1e-4, rtol=1e-3):
+        if torch.allclose(net.weights, global_minimum, atol=1e-2, rtol=1e-1):
             converged = True
             break
 
@@ -224,7 +234,7 @@ def test_rastrigin10_converges(optimizer_type):
 
 @pytest.mark.parametrize('optimizer_type', OPTIMIZERS)
 def test_himmelblau_converges(optimizer_type):
-    if optimizer_type.__name__ in ['RingTopologyPSO', 'GenerationalPSO', 'ChaoticPSO']:
+    if optimizer_type.__name__ in ['RingTopologyPSO']:
         # These PSO algorithms converge very slowly on this problem
         return
     net = HimmelblauModule()
@@ -237,7 +247,7 @@ def test_himmelblau_converges(optimizer_type):
                      ]
 
     def close_to_a_minimum(x, minima: List[Tensor]) -> bool:
-        return any(torch.allclose(x, m, atol=1e-4, rtol=1e-3) for m in minima)
+        return any(torch.allclose(x, m, atol=1e-2, rtol=1e-1) for m in minima)
 
     def closure():
         optim.zero_grad()
@@ -248,6 +258,37 @@ def test_himmelblau_converges(optimizer_type):
 
     converged = False
     for _ in range(4000):
+        optim.step(closure)
+        if close_to_a_minimum(net.weights, global_minima):
+            converged = True
+            break
+
+    assert converged, net.weights
+
+
+@pytest.mark.parametrize('optimizer_type', OPTIMIZERS)
+def test_goldstein_price_converges(optimizer_type):
+    if optimizer_type.__name__ in ['RingTopologyPSO']:
+        # These PSO algorithms converge very slowly on this problem
+        return
+    net = GoldsteinPriceModule()
+    optim = optimizer_type(net.parameters())
+
+    global_minima = [torch.Tensor([0, -1]),
+                     ]
+
+    def close_to_a_minimum(x, minima: List[Tensor]) -> bool:
+        return any(torch.allclose(x, m, atol=1e-2, rtol=1e-1) for m in minima)
+
+    def closure():
+        optim.zero_grad()
+        return net(None)
+
+    # Make sure we don't start out satisfying the condition
+    assert not close_to_a_minimum(net.weights, global_minima)
+
+    converged = False
+    for _ in range(10000):
         optim.step(closure)
         if close_to_a_minimum(net.weights, global_minima):
             converged = True
