@@ -4,5 +4,6 @@ from .optim.AutotuningPSO import AutotuningPSO
 from .optim.RingTopologyPSO import RingTopologyPSO
 from .optim.ChaoticPSO import ChaoticPSO
 from .optim.GenericPSO import GenericPSO
+from .optim.AcceleratedPSO import AcceleratedPSO
 
 OPTIMIZERS = list(GenericPSO.subclasses)

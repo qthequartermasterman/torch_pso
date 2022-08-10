@@ -177,7 +177,7 @@ def test_rastrigin_converges(optimizer_type):
 
 @pytest.mark.parametrize('optimizer_type', OPTIMIZERS)
 def test_rastrigin3_converges(optimizer_type):
-    if optimizer_type.__name__ in ['RingTopologyPSO', 'GenerationalPSO', 'ChaoticPSO']:
+    if optimizer_type.__name__ in ['RingTopologyPSO', 'GenerationalPSO', 'ChaoticPSO', 'AcceleratedPSO']:
         # These PSO algorithms converge very slowly on this problem
         return
     net = RastriginModule(num_dimensions=3)
