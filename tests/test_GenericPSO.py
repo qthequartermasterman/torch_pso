@@ -278,7 +278,7 @@ def test_goldstein_price_converges(optimizer_type):
                      ]
 
     def close_to_a_minimum(x, minima: List[Tensor]) -> bool:
-        return any(torch.allclose(x, m, atol=1e-2, rtol=1e-1) for m in minima)
+        return any(torch.allclose(x, m, atol=3e-2, rtol=1e-1) for m in minima)
 
     def closure():
         optim.zero_grad()
@@ -288,7 +288,7 @@ def test_goldstein_price_converges(optimizer_type):
     assert not close_to_a_minimum(net.weights, global_minima)
 
     converged = False
-    for _ in range(10000):
+    for _ in range(5000):
         optim.step(closure)
         if close_to_a_minimum(net.weights, global_minima):
             converged = True
