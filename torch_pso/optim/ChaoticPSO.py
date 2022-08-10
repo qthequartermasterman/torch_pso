@@ -15,6 +15,7 @@ class ChaoticParticle(GenericParticle):
                  k: float,
                  epsilon: float,
                  i0: float,
+                 z: float,
                  max_param_value: float,
                  min_param_value: float):
         if a <= 0:
@@ -34,17 +35,19 @@ class ChaoticParticle(GenericParticle):
         self.k = k
         self.i0 = i0
         self.epsilon = epsilon
-        self._z = 1  # This value is never specified in the paper.
+        self._z = z
+        self._z0 = z
         self.max_param_value = max_param_value
         self.min_param_value = min_param_value
 
         magnitude = abs(max_param_value - min_param_value)
         self.position = _initialize_param_groups(param_groups, max_param_value, min_param_value)
-        self.velocity = _initialize_param_groups(param_groups, magnitude, -magnitude)
+        # self.velocity = _initialize_param_groups(param_groups, magnitude, -magnitude)
+        self.velocity = _initialize_param_groups(param_groups, 0, 0)
         # I'm not sure what x_ip and u_ip represent, but their iterations are defined mathematically
         # Their initial values are not defined, however
         self.x_ip = _initialize_param_groups(param_groups, max_param_value, min_param_value)
-        self.u_ip = _initialize_param_groups(param_groups, magnitude, -magnitude)
+        self.u_ip = _initialize_param_groups(param_groups, 0, 0)
 
         self.best_known_position = clone_param_groups(self.position)
         self.best_known_loss_value = torch.inf
@@ -107,18 +110,26 @@ class ChaoticParticle(GenericParticle):
                 # All the below calculations assume x is between 0 and 1
                 x = self._min_max_to_unit_interval(x)
                 x_ip = self._min_max_to_unit_interval(x_ip)
+                gb = self._min_max_to_unit_interval(gb)
+                pb = self._min_max_to_unit_interval(pb)
+                # u = self._min_max_to_unit_interval(u)
+                # u_ip = self._min_max_to_unit_interval(u_ip)
 
                 delta_u = -(2 * self.a * (x - gb) + 2 * self.c * (x - x_ip)) / (1 + self.k * (self.a + self.b))
                 new_velocity = u + delta_u - self._z * (x - self.i0)
                 new_position = torch.clamp(self.k * new_velocity, min=0, max=1)
                 new_position = self._unit_interval_to_min_max(new_position)
+                # new_velocity = self._unit_interval_to_min_max(new_velocity)
 
                 delta_u_ip = -(2 * self.b * (x - pb) + 2 * self.c * (x - x_ip)) / (1 + self.k * (self.b + self.c))
                 new_u_ip = u_ip + delta_u_ip - self._z * (x_ip - self.i0)
                 new_x_ip = torch.clamp(self.k * new_u_ip, min=0, max=1)
                 new_x_ip = self._unit_interval_to_min_max(new_x_ip)
+                # new_u_ip = self._unit_interval_to_min_max(new_u_ip)
 
                 self._z *= 1 - self.beta
+
+                self.k = 30 - 15*(self._z0 - self._z)/self._z0
 
                 new_velocity_params.append(new_velocity)
                 new_position_params.append(new_position)
@@ -165,9 +176,10 @@ class ChaoticPSO(GenericPSO):
                  b: float = 0.01,
                  c: float = 0.01,
                  beta: float = .001,
-                 k: float = 15,
+                 k: float = 15.,
                  epsilon: float = 1.,
                  i0: float = 0.2,
+                 z: float = 0.7,
                  max_param_value: float = -10,
                  min_param_value: float = 10):
         particle_kwargs = {'a': a,
@@ -177,6 +189,7 @@ class ChaoticPSO(GenericPSO):
                            'k': k,
                            'epsilon': epsilon,
                            'i0': i0,
+                           'z':z,
                            'max_param_value': max_param_value,
                            'min_param_value': min_param_value,
                            }
