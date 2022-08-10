@@ -24,12 +24,19 @@ class GenerationalPSO(ParticleSwarmOptimizer):
                  num_particles: int = 100,
                  max_param_value: float = 10.,
                  min_param_value: float = -10.,
-                 generational_turnover_ratio: float = .3,
-                 keep_top_performers: int = 10):
+                 generational_turnover_ratio: float = .05,
+                 keep_top_performers: float|int = .5):
         super().__init__(params, inertial_weight, cognitive_coefficient, social_coefficient, num_particles,
                          max_param_value, min_param_value)
+
         self.generational_turnover_ratio = generational_turnover_ratio
+        if isinstance(keep_top_performers, float):
+            keep_top_performers = round(num_particles*keep_top_performers)
         self.keep_top_performers = keep_top_performers
+        if round(num_particles*generational_turnover_ratio) > num_particles-keep_top_performers:
+            raise ValueError(f'The generational turnover ratio is higher than the number of bottom performers. '
+                             f'Turnover: {round(num_particles*generational_turnover_ratio)}, '
+                             f'Bottom Performers: {num_particles-keep_top_performers}')
 
     @torch.no_grad()
     def step(self, closure: Callable[[], torch.Tensor]) -> torch.Tensor:
