@@ -193,7 +193,7 @@ def test_rastrigin3_converges(optimizer_type):
     assert not torch.allclose(net.weights, global_minimum, atol=1e-4, rtol=1e-3)
 
     converged = False
-    for _ in range(1000):
+    for _ in range(5000):
         optim.step(closure)
         if torch.allclose(net.weights, global_minimum, atol=1e-2, rtol=1e-1):
             converged = True
@@ -288,7 +288,7 @@ def test_goldstein_price_converges(optimizer_type):
     assert not close_to_a_minimum(net.weights, global_minima)
 
     converged = False
-    for _ in range(5000):
+    for _ in range(4000):
         optim.step(closure)
         if close_to_a_minimum(net.weights, global_minima):
             converged = True
