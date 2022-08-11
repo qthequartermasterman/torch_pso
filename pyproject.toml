@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "torch_pso"
-version = "1.1.0"
+version = "1.1.1"
 description = "Particle Swarm Optimization using the torch.optim API."
 readme = "README.md"
 authors = [{ name = "Andrew Sansom", email = "andrew@euleriancircuit.com" }]

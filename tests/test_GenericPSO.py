@@ -177,7 +177,7 @@ def test_rastrigin_converges(optimizer_type):
 
 @pytest.mark.parametrize('optimizer_type', OPTIMIZERS)
 def test_rastrigin3_converges(optimizer_type):
-    if optimizer_type.__name__ in ['RingTopologyPSO', 'GenerationalPSO', 'ChaoticPSO']:
+    if optimizer_type.__name__ in ['RingTopologyPSO', 'GenerationalPSO', 'ChaoticPSO', 'AcceleratedPSO']:
         # These PSO algorithms converge very slowly on this problem
         return
     net = RastriginModule(num_dimensions=3)
@@ -278,7 +278,7 @@ def test_goldstein_price_converges(optimizer_type):
                      ]
 
     def close_to_a_minimum(x, minima: List[Tensor]) -> bool:
-        return any(torch.allclose(x, m, atol=3e-2, rtol=1e-1) for m in minima)
+        return any(torch.allclose(x, m, atol=1e-1, rtol=1e-1) for m in minima)
 
     def closure():
         optim.zero_grad()
