@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Sansom"
+  given-names: "Andrew P."
+  orcid: "https://orcid.org/0000-0002-2276-7224"
+title: "Torch PSO"
+version: v1.2.1
+doi: 10.5281/zenodo.6982304
+date-released: 2022-08-10
+url: "https://github.com/qthequartermasterman/torch_pso"
