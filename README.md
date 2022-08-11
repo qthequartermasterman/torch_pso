@@ -1,5 +1,5 @@
 # Torch PSO
-
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6982304.svg)](https://doi.org/10.5281/zenodo.6982304)
 Particle Swarm Optimization is an optimization technique that iteratively attempts to improve a list of candidate
 solutions. Each candidate solution is called a "particle", and collectively they are called a "swarm". In each step of
 the optimization, each particle moves in a random directly while simultaneously being pulled towards the other particles
