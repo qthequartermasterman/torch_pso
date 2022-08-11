@@ -268,7 +268,7 @@ def test_himmelblau_converges(optimizer_type):
 
 @pytest.mark.parametrize('optimizer_type', OPTIMIZERS)
 def test_goldstein_price_converges(optimizer_type):
-    if optimizer_type.__name__ in ['RingTopologyPSO']:
+    if optimizer_type.__name__ in ['RingTopologyPSO', 'SineCosineAlgorithm', 'ImprovedSineCosineAlgorithm']:
         # These PSO algorithms converge very slowly on this problem
         return
     net = GoldsteinPriceModule()
