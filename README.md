@@ -47,3 +47,16 @@ for _ in range(100):
     print('Prediciton', net(x))
     print('Target    ', target)
 ```
+
+## Citation
+To cite this work in a paper use the following citation:
+```bibtex
+@software{Sansom_Torch_PSO_2022,
+    author = {Sansom, Andrew P.},
+    doi = {10.5281/zenodo.6982304},
+    month = {8},
+    title = {{Torch PSO}},
+    url = {https://github.com/qthequartermasterman/torch_pso},
+    year = {2022}
+}
+```
