@@ -1,5 +1,5 @@
 from functools import reduce
-from typing import Callable, List, Dict, Iterable, Union
+from typing import Callable, List, Dict, Iterable, Union, Optional
 
 import torch
 
@@ -82,12 +82,12 @@ class DolphinPodParticle(GenericParticle):
         self.param_groups = param_groups
         self.max_param_value = max_param_value
         self.min_param_value = min_param_value
-        # TODO Assert timestep is small enough
         self.time_step = time_step
 
         # TODO: Initialize params according to paper
         self.position = _initialize_param_groups(param_groups, max_param_value, min_param_value)
-        self.velocity = _initialize_param_groups(param_groups, 0, 0)
+        magnitude = max_param_value+min_param_value
+        self.velocity = _initialize_param_groups(param_groups, -magnitude/2, magnitude/2)
         self.current_loss_value = torch.inf
 
         self.best_known_position = clone_param_groups(self.position)
@@ -178,6 +178,17 @@ class DolphinPodParticle(GenericParticle):
         return new_loss
 
 
+def _calculate_max_time_step(num_particles: int, k, xi) -> float:
+    zero = torch.zeros((num_particles, num_particles))
+    identity = torch.eye(num_particles)
+    K = -k * (num_particles * identity - 1)
+    G = xi * identity
+    dynamical_matrix = torch.cat([torch.cat([zero, -K]), torch.cat([identity, -G])], dim=1)
+    eigenvals = [e for e in torch.linalg.eigvals(dynamical_matrix).tolist() if e.real <= 0]
+    t_max_candidates = [-2*e.real/(abs(e)**2) for e in eigenvals]
+    return min(t_max_candidates)
+
+
 class DolphinPodOptimizer(GenericPSO):
     """
     Dolphin Pod Optimization is a nature-inspired, deterministic, global, and derivative-free optimization method,
@@ -195,20 +206,42 @@ class DolphinPodOptimizer(GenericPSO):
 
     def __init__(self,
                  params: Iterable[torch.nn.Parameter],
-                 num_particles: int = 10,
-                 alpha: float = 0.5,
-                 time_step: float = .001,
-                 xi: float = 2.,
-                 k: float = .2,
-                 h: float = .2,
+                 num_particles: Optional[int] = None,
+                 alpha: Optional[float] = None,
+                 xi: Optional[float] = None,
+                 p: Optional[float] = None,
+                 q: Optional[float] = None,
+                 # time_step: float = .001,
+                 # k: float = .2,
+                 # h: float = .2,
                  max_param_value: float = -10,
                  min_param_value: float = 10):
         # TODO: Fix hyperparameter initialization, provide p and q instead of k h and timestep
+        params = list(params)
+        dimensions = self._count_dimensions(params)
+        if dimensions < 10:
+            p = p or 8
+            q = q or 1
+            xi = xi or 1
+            alpha = alpha or 0.5
+        else:
+            xi = xi or 0.1
+            q = q or 0.1
+            p = p or 8
+            alpha = alpha or 0.5
+
+        if num_particles is None:
+            num_particles = 8 * dimensions
+        k = h = q / num_particles
+        max_time_step = _calculate_max_time_step(num_particles, k, xi)
+        time_step = max_time_step / p
+        self.time_step = time_step
         self.alpha = alpha
         particle_kwargs = {'xi': xi, 'k': k, 'h': h, 'time_step': time_step,
                            'max_param_value': max_param_value,
                            'min_param_value': min_param_value,
                            }
+        print(particle_kwargs)
         super().__init__(params, num_particles, particle_class=DolphinPodParticle, particle_kwargs=particle_kwargs)
         self.worst_current_global_param_groups = clone_param_groups(self.param_groups)
         self.worst_current_global_loss_value = -torch.inf
@@ -224,7 +257,6 @@ class DolphinPodOptimizer(GenericPSO):
         self.populate_best_known_values(closure)
 
         for particle in self.particles:
-            # TODO: Evaluate the attraction forces delta_j and phi_j
             self.worst_current_global_loss_value = -torch.inf  # Reset the worst particle loss for each step
             pod_attraction_force: List[Dict] = self._calculate_pod_attraction(particle)
             food_attraction_force: List[Dict] = self._calculate_food_attraction(particle)
@@ -241,6 +273,7 @@ class DolphinPodOptimizer(GenericPSO):
                 self.worst_current_global_loss_value = particle_loss
 
         self._update_master_parms()
+        print(self.time_step)
         print([particle.position for particle in self.particles])
         print(self.param_groups)
         print()
@@ -288,7 +321,7 @@ class DolphinPodOptimizer(GenericPSO):
         # If calculation is nan (i.e. one of the best known values is inf), then downstream computation will break
         if torch.isnan(calculation):
             # return torch.clamp(torch.tensor(calculation), -1e6, 1e6).item()
-            raise ValueError(f'F-hat calculation is nan {calculation}' )
+            raise ValueError(f'F-hat calculation is nan {calculation}')
         return calculation
 
     def populate_best_known_values(self, closure: Callable[[], torch.Tensor]) -> None:
@@ -301,3 +334,6 @@ class DolphinPodOptimizer(GenericPSO):
                 self.worst_current_global_param_groups = clone_param_groups(particle.position)
                 self.worst_current_global_loss_value = particle_loss
         self._update_master_parms()
+
+    def _count_dimensions(self, params: Iterable[torch.nn.Parameter]) -> int:
+        return sum(sum(p.size()) for p in params)
