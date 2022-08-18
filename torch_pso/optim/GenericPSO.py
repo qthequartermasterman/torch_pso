@@ -52,6 +52,7 @@ def _initialize_param_groups(param_groups: List[Dict], max_param_value, min_para
 class GenericParticle(ABC):
     def __init__(self, *args, **kwargs):
         self.position: List[Dict] = []
+        self.param_groups: List[Dict] = []
 
     @abstractmethod
     def step(self, closure: Callable[[], torch.Tensor], global_best_param_groups: List[Dict]) -> torch.Tensor:
@@ -61,6 +62,16 @@ class GenericParticle(ABC):
         :param global_best_param_groups: List of param_groups that yield the best found loss globally
         :return:
         """
+        pass
+
+    def _update_params(self):
+        # Really crummy way to update the parameter weights in the original model.
+        # Simply changing self.param_groups doesn't update the model.
+        # Nor does changing its elements or the raw values of 'param' of the elements.
+        # We have to change the underlying tensor data to point to the new positions
+        # for i in range(len(self.position)):
+        #     for j in range(len(self.param_groups[i]['params'])):
+        #         self.param_groups[i]['params'][j].data = self.param_groups[i]['params'][j].data
         pass
 
 
@@ -75,8 +86,8 @@ class GenericPSO(Optimizer):
             particle_args = []
         if particle_kwargs is None:
             particle_kwargs = {}
-        self.particles = [particle_class(self.param_groups, *particle_args, **particle_kwargs)
-                          for _ in range(num_particles)]
+        self.particles: List[particle_class] = [particle_class(self.param_groups, *particle_args, **particle_kwargs)
+                                                for _ in range(num_particles)]
 
         self.best_known_global_param_groups = clone_param_groups(self.param_groups)
         self.best_known_global_loss_value = torch.inf

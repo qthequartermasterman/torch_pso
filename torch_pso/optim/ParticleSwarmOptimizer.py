@@ -101,13 +101,7 @@ class Particle(GenericParticle):
             position_group['params'] = new_position_params
             velocity_group['params'] = new_velocity_params
 
-        # Really crummy way to update the parameter weights in the original model.
-        # Simply changing self.param_groups doesn't update the model.
-        # Nor does changing its elements or the raw values of 'param' of the elements.
-        # We have to change the underlying tensor data to point to the new positions
-        for i in range(len(self.position)):
-            for j in range(len(self.param_groups[i]['params'])):
-                self.param_groups[i]['params'][j].data = self.param_groups[i]['params'][j].data
+        self._update_params()
 
         # Calculate new loss after moving and update the best known position if we're in a better spot
         new_loss = closure()
@@ -115,6 +109,8 @@ class Particle(GenericParticle):
             self.best_known_position = clone_param_groups(self.position)
             self.best_known_loss_value = new_loss
         return new_loss
+
+
 
 
 class ParticleSwarmOptimizer(GenericPSO):
