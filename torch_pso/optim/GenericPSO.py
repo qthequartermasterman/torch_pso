@@ -65,6 +65,8 @@ class GenericParticle(ABC):
 
 
 class GenericPSO(Optimizer):
+    subclasses = []
+
     def __init__(self, params: Iterable[torch.nn.Parameter], num_particles: int, particle_class: Type[GenericParticle],
                  particle_args: Optional[List] = None, particle_kwargs: Optional[Dict] = None):
         defaults = {}
@@ -93,16 +95,18 @@ class GenericPSO(Optimizer):
                 self.best_known_global_param_groups = clone_param_groups(particle.position)
                 self.best_known_global_loss_value = particle_loss
 
-        # set the module's parameters to be the best performing ones
+        self._update_master_parms()
+
+        return closure()  # loss = closure()
+
+    def _update_master_parms(self):
+        """Set the module's parameters to be the best performing ones."""
         for master_group, best_group in zip(self.param_groups, self.best_known_global_param_groups):
             clone = clone_param_group(best_group)['params']
             for i in range(len(clone)):
                 master_group['params'][i].data = clone[i].data
 
-        return closure()  # loss = closure()
-
-    subclasses = []
-
     def __init_subclass__(cls, **kwargs):
+        """Register all subclasses, so we can easily run the same test benchmarks on every subclass."""
         super().__init_subclass__(**kwargs)
         cls.subclasses.append(cls)
