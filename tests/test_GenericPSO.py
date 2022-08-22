@@ -4,6 +4,7 @@ import pytest
 import torch
 from torch import Tensor
 
+from tests.test_utils import optimizer_tests
 from torch_pso import OPTIMIZERS
 
 
@@ -69,12 +70,8 @@ class GoldsteinPriceModule(torch.nn.Module):
         return (1 + (x+y+1)**2*(19-14*x+3*x**2-14*y+6*x*y+3*y**2))*(30 + (2*x-3*y)**2*(18-32*x+12*x**2+48*y-36*x*y+27*y**2))
 
 
-@pytest.mark.parametrize('optimizer_type', OPTIMIZERS)
+@optimizer_tests(ignore=['DolphinPodOptimizer', 'RingTopologyPSO'])
 def test_square_converges(optimizer_type):
-    if optimizer_type.__name__ == 'RingTopologyPSO':
-        # Ring Topology PSO converges SUPER slowly on a simple quadratic function.
-        # Sufficiently so that even passing this test is hit or miss
-        return
     net = SquareWeightsModule()
     optim = optimizer_type(net.parameters())
 
@@ -95,12 +92,8 @@ def test_square_converges(optimizer_type):
     assert converged, net.weights
 
 
-@pytest.mark.parametrize('optimizer_type', OPTIMIZERS)
+@optimizer_tests(ignore=['DolphinPodOptimizer', 'RingTopologyPSO'])
 def test_square_plus_2_converges(optimizer_type):
-    if optimizer_type.__name__ == 'RingTopologyPSO':
-        # Ring Topology PSO converges SUPER slowly on a simple quadratic function.
-        # Sufficiently so that even passing this test is hit or miss
-        return
     net = SquarePlus2WeightsModule()
     optim = optimizer_type(net.parameters())
 
@@ -121,12 +114,8 @@ def test_square_plus_2_converges(optimizer_type):
     assert converged, net.weights
 
 
-@pytest.mark.parametrize('optimizer_type', OPTIMIZERS)
+@optimizer_tests(ignore=['DolphinPodOptimizer', 'RingTopologyPSO'])
 def test_quartic_converges(optimizer_type):
-    if optimizer_type.__name__ == 'RingTopologyPSO':
-        # Ring Topology PSO converges SUPER slowly on a simple quadratic function.
-        # Sufficiently so that even passing this test is hit or miss
-        return
     net = QuarticWeightsModule()
     optim = optimizer_type(net.parameters())
 
@@ -147,12 +136,8 @@ def test_quartic_converges(optimizer_type):
     assert converged, net.weights
 
 
-@pytest.mark.parametrize('optimizer_type', OPTIMIZERS)
+@optimizer_tests(ignore=['DolphinPodOptimizer', 'RingTopologyPSO'])
 def test_rastrigin_converges(optimizer_type):
-    if optimizer_type.__name__ == 'RingTopologyPSO':
-        # Ring Topology PSO converges SUPER slowly on a simple quadratic function.
-        # Sufficiently so that even passing this test is hit or miss
-        return
     net = RastriginModule(num_dimensions=1)
     optim = optimizer_type(net.parameters())
 
@@ -175,11 +160,8 @@ def test_rastrigin_converges(optimizer_type):
     assert converged, net.weights
 
 
-@pytest.mark.parametrize('optimizer_type', OPTIMIZERS)
+@optimizer_tests(ignore=['DolphinPodOptimizer', 'RingTopologyPSO', 'GenerationalPSO', 'ChaoticPSO', 'AcceleratedPSO'])
 def test_rastrigin3_converges(optimizer_type):
-    if optimizer_type.__name__ in ['RingTopologyPSO', 'GenerationalPSO', 'ChaoticPSO', 'AcceleratedPSO']:
-        # These PSO algorithms converge very slowly on this problem
-        return
     net = RastriginModule(num_dimensions=3)
     optim = optimizer_type(net.parameters())
 
@@ -205,11 +187,8 @@ def test_rastrigin3_converges(optimizer_type):
 # All of the algorithms converge really slowly on this test. Interestingly, there is always a single dimension
 # That converges more slowly than the rest.
 @pytest.mark.skip('Difficult convergence test.')
-@pytest.mark.parametrize('optimizer_type', OPTIMIZERS)
+@optimizer_tests(ignore=['DolphinPodOptimizer', 'RingTopologyPSO'])
 def test_rastrigin10_converges(optimizer_type):
-    if optimizer_type.__name__ in ['RingTopologyPSO']:
-        # These PSO algorithms converge very slowly on this problem
-        return
     net = RastriginModule(num_dimensions=10)
     optim = optimizer_type(net.parameters())
 
@@ -232,11 +211,8 @@ def test_rastrigin10_converges(optimizer_type):
     assert converged, net.weights
 
 
-@pytest.mark.parametrize('optimizer_type', OPTIMIZERS)
+@optimizer_tests(ignore=['DolphinPodOptimizer', 'RingTopologyPSO'])
 def test_himmelblau_converges(optimizer_type):
-    if optimizer_type.__name__ in ['RingTopologyPSO']:
-        # These PSO algorithms converge very slowly on this problem
-        return
     net = HimmelblauModule()
     optim = optimizer_type(net.parameters())
 
@@ -266,11 +242,8 @@ def test_himmelblau_converges(optimizer_type):
     assert converged, net.weights
 
 
-@pytest.mark.parametrize('optimizer_type', OPTIMIZERS)
+@optimizer_tests(ignore=['DolphinPodOptimizer', 'RingTopologyPSO'])
 def test_goldstein_price_converges(optimizer_type):
-    if optimizer_type.__name__ in ['RingTopologyPSO']:
-        # These PSO algorithms converge very slowly on this problem
-        return
     net = GoldsteinPriceModule()
     optim = optimizer_type(net.parameters())
 
