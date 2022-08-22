@@ -2,6 +2,8 @@ import functools
 from typing import Optional, List
 
 import pytest
+import torch
+from torch import Tensor
 
 from torch_pso import OPTIMIZERS
 
@@ -30,3 +32,7 @@ def optimizer_tests(func=None, *, ignore: Optional[List] = None):
         return func(optimizer_type, *args, **kwargs)
 
     return wrapper
+
+
+def close_to_a_minimum(x: Tensor, minima: List[Tensor], atol: float, rtol: float) -> bool:
+    return any(torch.allclose(x, m, atol=atol, rtol=rtol) for m in minima)
