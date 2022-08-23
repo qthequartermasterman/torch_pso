@@ -158,7 +158,7 @@ def test_himmelblau_converges(optimizer_type):
                                     max_iterations=3000)
 
 
-@optimizer_tests(ignore=['RingTopologyPSO'])
+@optimizer_tests(ignore=['DolphinPodOptimizer', 'RingTopologyPSO'])
 def test_goldstein_price_converges(optimizer_type):
     class GoldsteinPriceModule(torch.nn.Module):
         def __init__(self):
