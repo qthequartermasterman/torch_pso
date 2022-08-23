@@ -32,7 +32,7 @@ def generic_convergence_test(optimizer_type, net: torch.nn.Module, atol: float, 
                       f'\nOptimizer={optimizer_type}'
 
 
-@optimizer_tests(ignore=['DolphinPodOptimizer', 'RingTopologyPSO'])
+@optimizer_tests(ignore=['RingTopologyPSO'])
 def test_square_converges(optimizer_type):
     class SquareWeightsModule(torch.nn.Module):
         def __init__(self):
@@ -51,7 +51,7 @@ def test_square_converges(optimizer_type):
                                     max_iterations=3000)
 
 
-@optimizer_tests(ignore=['DolphinPodOptimizer', 'RingTopologyPSO'])
+@optimizer_tests(ignore=['RingTopologyPSO'])
 def test_square_plus_2_converges(optimizer_type):
     class SquarePlus2WeightsModule(torch.nn.Module):
         def __init__(self):
@@ -70,7 +70,7 @@ def test_square_plus_2_converges(optimizer_type):
                                     max_iterations=3000)
 
 
-@optimizer_tests(ignore=['DolphinPodOptimizer', 'RingTopologyPSO'])
+@optimizer_tests(ignore=['RingTopologyPSO'])
 def test_quartic_converges(optimizer_type):
     class QuarticWeightsModule(torch.nn.Module):
         def __init__(self):
@@ -105,7 +105,7 @@ class RastriginModule(torch.nn.Module):
         return self.A * self.num_dimensions + (x ** 2 - self.A * torch.cos(2 * torch.pi * x)).sum()
 
 
-@optimizer_tests(ignore=['DolphinPodOptimizer', 'RingTopologyPSO'])
+@optimizer_tests(ignore=['RingTopologyPSO'])
 def test_rastrigin1_converges(optimizer_type):
     return generic_convergence_test(optimizer_type=optimizer_type,
                                     net=RastriginModule(num_dimensions=1),
@@ -135,7 +135,7 @@ def test_rastrigin10_converges(optimizer_type):
                                     max_iterations=3000)
 
 
-@optimizer_tests(ignore=['DolphinPodOptimizer', 'RingTopologyPSO'])
+@optimizer_tests(ignore=['RingTopologyPSO'])
 def test_himmelblau_converges(optimizer_type):
     class HimmelblauModule(torch.nn.Module):
         def __init__(self):
@@ -158,7 +158,7 @@ def test_himmelblau_converges(optimizer_type):
                                     max_iterations=3000)
 
 
-@optimizer_tests(ignore=['DolphinPodOptimizer', 'RingTopologyPSO'])
+@optimizer_tests(ignore=['RingTopologyPSO'])
 def test_goldstein_price_converges(optimizer_type):
     class GoldsteinPriceModule(torch.nn.Module):
         def __init__(self):
