@@ -2,7 +2,7 @@ from typing import List, Dict, Callable, Iterable
 
 import torch
 
-from torch_pso.optim.GenericPSO import (clone_param_groups, _initialize_param_groups, GenericParticle, GenericPSO)
+from torch_pso.optim.GenericPSO import clone_param_groups, _initialize_param_groups, GenericParticle, GenericPSO
 
 
 class Particle(GenericParticle):
@@ -45,9 +45,17 @@ class Particle(GenericParticle):
     :param min_param_value: Minimum value of the parameters in the search space
     """
 
-    def __init__(self, param_groups: List[Dict], inertial_weight: float, cognitive_coefficient: float,
-                 social_coefficient: float, max_param_value: float = 10., min_param_value: float = -10., *args,
-                 **kwargs):
+    def __init__(
+        self,
+        param_groups: List[Dict],
+        inertial_weight: float,
+        cognitive_coefficient: float,
+        social_coefficient: float,
+        max_param_value: float = 10.0,
+        min_param_value: float = -10.0,
+        *args,
+        **kwargs
+    ):
         super().__init__(*args, **kwargs)
         magnitude = abs(max_param_value - min_param_value)
         self.param_groups = param_groups
@@ -69,10 +77,9 @@ class Particle(GenericParticle):
         """
         # Because our parameters are not a single tensor, we have to iterate over each group, and then each param in
         # each group.
-        for position_group, velocity_group, personal_best, global_best, master in zip(self.position, self.velocity,
-                                                                                      self.best_known_position,
-                                                                                      global_best_param_groups,
-                                                                                      self.param_groups):
+        for position_group, velocity_group, personal_best, global_best, master in zip(
+            self.position, self.velocity, self.best_known_position, global_best_param_groups, self.param_groups
+        ):
             position_group_params = position_group['params']
             velocity_group_params = velocity_group['params']
             personal_best_params = personal_best['params']
@@ -81,14 +88,16 @@ class Particle(GenericParticle):
 
             new_position_params = []
             new_velocity_params = []
-            for p, v, pb, gb, m in zip(position_group_params, velocity_group_params, personal_best_params,
-                                       global_best_params, master_params):
+            for p, v, pb, gb, m in zip(
+                position_group_params, velocity_group_params, personal_best_params, global_best_params, master_params
+            ):
                 rand_personal = torch.rand_like(v)
                 rand_group = torch.rand_like(v)
-                new_velocity = (self.inertial_weight * v
-                                + self.cognitive_coefficient * rand_personal * (pb - p)
-                                + self.social_coefficient * rand_group * (gb - p)
-                                )
+                new_velocity = (
+                    self.inertial_weight * v
+                    + self.cognitive_coefficient * rand_personal * (pb - p)
+                    + self.social_coefficient * rand_group * (gb - p)
+                )
                 new_velocity_params.append(new_velocity)
                 new_position = p + new_velocity
                 new_position_params.append(new_position)
@@ -147,25 +156,29 @@ class ParticleSwarmOptimizer(GenericPSO):
     :param min_param_value: Minimum value of the parameters in the search space
     """
 
-    def __init__(self,
-                 params: Iterable[torch.nn.Parameter],
-                 inertial_weight: float = .9,
-                 cognitive_coefficient: float = 1.,
-                 social_coefficient: float = 1.,
-                 num_particles: int = 100,
-                 max_param_value: float = 10.,
-                 min_param_value: float = -10.):
+    def __init__(
+        self,
+        params: Iterable[torch.nn.Parameter],
+        inertial_weight: float = 0.9,
+        cognitive_coefficient: float = 1.0,
+        social_coefficient: float = 1.0,
+        num_particles: int = 100,
+        max_param_value: float = 10.0,
+        min_param_value: float = -10.0,
+    ):
         self.num_particles = num_particles
         self.inertial_weight = inertial_weight
         self.cognitive_coefficient = cognitive_coefficient
         self.social_coefficient = social_coefficient
         self.max_param_value = max_param_value
         self.min_param_value = min_param_value
-        kwargs = {'inertial_weight': inertial_weight,
-                  'cognitive_coefficient': cognitive_coefficient,
-                  'social_coefficient': social_coefficient,
-                  'max_param_value': max_param_value,
-                  'min_param_value': min_param_value}
+        kwargs = {
+            'inertial_weight': inertial_weight,
+            'cognitive_coefficient': cognitive_coefficient,
+            'social_coefficient': social_coefficient,
+            'max_param_value': max_param_value,
+            'min_param_value': min_param_value,
+        }
         super().__init__(params, num_particles, Particle, particle_kwargs=kwargs)
 
         # defaults = {}

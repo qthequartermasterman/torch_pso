@@ -9,8 +9,18 @@ class AcceleratedParticle(GenericParticle):
     """
     Particle functionality for the Accelerated Particle Swarm Optimization
     """
-    def __init__(self, param_groups, alpha: float, beta: float, decay_parameter: float, max_param_value: float,
-                 min_param_value: float, *args, **kwargs):
+
+    def __init__(
+        self,
+        param_groups,
+        alpha: float,
+        beta: float,
+        decay_parameter: float,
+        max_param_value: float,
+        min_param_value: float,
+        *args,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
         if not 0 < beta < 1:
             raise ValueError(f'Beta must be a positive constant, not of value {beta}.')
@@ -38,16 +48,13 @@ class AcceleratedParticle(GenericParticle):
         """
         # Because our parameters are not a single tensor, we have to iterate over each group, and then each param in
         # each group.
-        for position_group, global_best, master in zip(self.position,
-                                                       global_best_param_groups,
-                                                       self.param_groups):
+        for position_group, global_best, master in zip(self.position, global_best_param_groups, self.param_groups):
             position_group_params = position_group['params']
             global_best_params = global_best['params']
             master_params = master['params']
 
             new_position_params = []
-            for p, gb, m in zip(position_group_params,
-                                global_best_params, master_params):
+            for p, gb, m in zip(position_group_params, global_best_params, master_params):
                 rand_group = torch.rand_like(p)
                 new_position = (1 - self.beta) * p + self.beta * gb + self.alpha * rand_group
                 new_position_params.append(new_position)
@@ -82,18 +89,21 @@ class AcceleratedPSO(GenericPSO):
     https://arxiv.org/abs/1203.6577
     """
 
-    def __init__(self,
-                 params: Iterable[torch.nn.Parameter],
-                 num_particles: int = 100,
-                 alpha: float = 0.3,
-                 beta: float = 0.45,
-                 decay_parameter: float = 0.7,
-                 max_param_value: float = -10,
-                 min_param_value: float = 10):
-        particle_kwargs = {'alpha': alpha,
-                           'beta': beta,
-                           'decay_parameter': decay_parameter,
-                           'max_param_value': max_param_value,
-                           'min_param_value': min_param_value,
-                           }
+    def __init__(
+        self,
+        params: Iterable[torch.nn.Parameter],
+        num_particles: int = 100,
+        alpha: float = 0.3,
+        beta: float = 0.45,
+        decay_parameter: float = 0.7,
+        max_param_value: float = -10,
+        min_param_value: float = 10,
+    ):
+        particle_kwargs = {
+            'alpha': alpha,
+            'beta': beta,
+            'decay_parameter': decay_parameter,
+            'max_param_value': max_param_value,
+            'min_param_value': min_param_value,
+        }
         super().__init__(params, num_particles, particle_class=AcceleratedParticle, particle_kwargs=particle_kwargs)

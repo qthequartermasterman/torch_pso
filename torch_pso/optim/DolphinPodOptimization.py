@@ -65,7 +65,7 @@ def magnitude_param_groups_list(x: List[Dict]) -> torch.Tensor:
     We can iterate over every parameter, get that parameter's norm squared, sum all of those, and then take the square
     root.
     """
-    running_total = torch.tensor(0.)
+    running_total = torch.tensor(0.0)
     for x_group in x:
         x_params = x_group['params']
         running_total += sum(torch.linalg.norm(x_param) ** 2 for x_param in x_params)
@@ -96,8 +96,19 @@ class DolphinPodParticle(GenericParticle):
     """
     Particle functionality for Dolphin Pod Optimization
     """
-    def __init__(self, param_groups, time_step: float, xi: float, k: float, h: float, max_param_value: float,
-                 min_param_value: float, *args, **kwargs):
+
+    def __init__(
+        self,
+        param_groups,
+        time_step: float,
+        xi: float,
+        k: float,
+        h: float,
+        max_param_value: float,
+        min_param_value: float,
+        *args,
+        **kwargs,
+    ):
 
         super().__init__(*args, **kwargs)
         self.xi = xi
@@ -121,12 +132,13 @@ class DolphinPodParticle(GenericParticle):
         self.worst_known_loss_value = -torch.inf
 
     # pylint-ignore:W0221
-    def step(self,
-             closure: Callable[[], torch.Tensor],
-             global_best_param_groups: List[Dict],
-             pod_attractive_force: List[Dict],
-             food_attractive_force: List[Dict],
-             ) -> torch.Tensor:
+    def step(
+        self,
+        closure: Callable[[], torch.Tensor],
+        global_best_param_groups: List[Dict],
+        pod_attractive_force: List[Dict],
+        food_attractive_force: List[Dict],
+    ) -> torch.Tensor:
         """
         Particle will take one step.
         :param pod_attractive_force: param_groups object that contains the pod attractive force vector
@@ -138,15 +150,9 @@ class DolphinPodParticle(GenericParticle):
 
         # TODO: Update velocity and position
 
-        for (position_group,
-             velocity_group,
-             pod_attractive_group,
-             food_attractive_group,
-             master) in zip(self.position,
-                            self.velocity,
-                            pod_attractive_force,
-                            food_attractive_force,
-                            self.param_groups):
+        for (position_group, velocity_group, pod_attractive_group, food_attractive_group, master) in zip(
+            self.position, self.velocity, pod_attractive_force, food_attractive_force, self.param_groups
+        ):
 
             position_group_params = position_group['params']
             velocity_group_params = velocity_group['params']
@@ -156,8 +162,9 @@ class DolphinPodParticle(GenericParticle):
 
             new_position_params = []
             new_velocity_params = []
-            for p, v, pod, food, m in zip(position_group_params, velocity_group_params, pod_params, food_params,
-                                          master_params):
+            for p, v, pod, food, m in zip(
+                position_group_params, velocity_group_params, pod_params, food_params, master_params
+            ):
                 new_velocity = (1 - self.xi * self.time_step) * v + self.time_step * (-self.k * pod + self.h * food)
                 new_velocity_params.append(new_velocity)
                 new_position = p + new_velocity * self.time_step
@@ -185,15 +192,12 @@ class DolphinPodParticle(GenericParticle):
         :param closure: function that returns the loss at the current network parameters
         :return: the loss of the current position
         """
-        for (position_group,
-             master) in zip(self.position,
-                            self.param_groups):
+        for (position_group, master) in zip(self.position, self.param_groups):
 
             position_group_params = position_group['params']
             master_params = master['params']
 
-            for p, m in zip(position_group_params,
-                            master_params):
+            for p, m in zip(position_group_params, master_params):
                 m.data = p.data  # Update the model, so we can use it for calculating loss
 
         self._update_params()
@@ -241,18 +245,20 @@ class DolphinPodOptimizer(GenericPSO):
     -Inspired-Deterministic-Algorithm-for-Simulation-Based-Design.pdf
     """
 
-    def __init__(self,
-                 params: Iterable[torch.nn.Parameter],
-                 num_particles: Optional[int] = None,
-                 alpha: Optional[float] = None,
-                 xi: Optional[float] = None,
-                 p: Optional[float] = None,
-                 q: Optional[float] = None,
-                 # time_step: float = .001,
-                 # k: float = .2,
-                 # h: float = .2,
-                 max_param_value: float = -10,
-                 min_param_value: float = 10):
+    def __init__(
+        self,
+        params: Iterable[torch.nn.Parameter],
+        num_particles: Optional[int] = None,
+        alpha: Optional[float] = None,
+        xi: Optional[float] = None,
+        p: Optional[float] = None,
+        q: Optional[float] = None,
+        # time_step: float = .001,
+        # k: float = .2,
+        # h: float = .2,
+        max_param_value: float = -10,
+        min_param_value: float = 10,
+    ):
         # TODO: Fix hyperparameter initialization, provide p and q instead of k h and timestep
         params = list(params)
         dimensions = _count_dimensions(params)
@@ -274,10 +280,14 @@ class DolphinPodOptimizer(GenericPSO):
         time_step = max_time_step / p
         self.time_step = time_step
         self.alpha = alpha
-        particle_kwargs = {'xi': xi, 'k': k, 'h': h, 'time_step': time_step,
-                           'max_param_value': max_param_value,
-                           'min_param_value': min_param_value,
-                           }
+        particle_kwargs = {
+            'xi': xi,
+            'k': k,
+            'h': h,
+            'time_step': time_step,
+            'max_param_value': max_param_value,
+            'min_param_value': min_param_value,
+        }
         # print(particle_kwargs)
         super().__init__(params, num_particles, particle_class=DolphinPodParticle, particle_kwargs=particle_kwargs)
         self.worst_current_global_param_groups = clone_param_groups(self.param_groups)
@@ -298,10 +308,9 @@ class DolphinPodOptimizer(GenericPSO):
             pod_attraction_force: List[Dict] = self._calculate_pod_attraction(particle)
             food_attraction_force: List[Dict] = self._calculate_food_attraction(particle)
 
-            particle_loss = particle.step(closure,
-                                          self.best_known_global_param_groups,
-                                          pod_attraction_force,
-                                          food_attraction_force)
+            particle_loss = particle.step(
+                closure, self.best_known_global_param_groups, pod_attraction_force, food_attraction_force
+            )
             if particle_loss < self.best_known_global_loss_value:
                 self.best_known_global_param_groups = clone_param_groups(particle.position)
                 self.best_known_global_loss_value = particle_loss
@@ -342,8 +351,9 @@ class DolphinPodOptimizer(GenericPSO):
             f_hat = self.f_hat(particle, particle_i)
             direction = unit_difference_of_two_param_groups_lists(particle_i.best_known_position, particle.position)
             magnitude_of_diff = magnitude_param_groups_list(
-                difference_of_two_param_groups_lists(particle_i.best_known_position, particle.position))
-            coefficient = 2 * f_hat / (1 + magnitude_of_diff ** self.alpha)
+                difference_of_two_param_groups_lists(particle_i.best_known_position, particle.position)
+            )
+            coefficient = 2 * f_hat / (1 + magnitude_of_diff**self.alpha)
             addend = multiply_param_groups_by_scalar(direction, coefficient)
             addends.append(addend)
         return reduce(sum_of_two_param_groups_lists, addends)

@@ -9,8 +9,23 @@ class ChaoticParticle(GenericParticle):
     """
     Particle functionality for the Chaotic Particle Swarm Optimization algorithm.
     """
-    def __init__(self, param_groups, a: float, b: float, c: float, beta: float, k: float, epsilon: float, i0: float,
-                 z: float, max_param_value: float, min_param_value: float, *args, **kwargs):
+
+    def __init__(
+        self,
+        param_groups,
+        a: float,
+        b: float,
+        c: float,
+        beta: float,
+        k: float,
+        epsilon: float,
+        i0: float,
+        z: float,
+        max_param_value: float,
+        min_param_value: float,
+        *args,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
         if a <= 0:
             raise ValueError(f'A must be a positive constant, not of value {a}.')
@@ -60,19 +75,15 @@ class ChaoticParticle(GenericParticle):
         """
         # Because our parameters are not a single tensor, we have to iterate over each group, and then each param in
         # each group.
-        for (position_group,
-             velocity_group,
-             x_ip_group,
-             u_ip_group,
-             personal_best,
-             global_best,
-             master) in zip(self.position,
-                            self.velocity,
-                            self.u_ip,
-                            self.x_ip,
-                            self.best_known_position,
-                            global_best_param_groups,
-                            self.param_groups):
+        for (position_group, velocity_group, x_ip_group, u_ip_group, personal_best, global_best, master) in zip(
+            self.position,
+            self.velocity,
+            self.u_ip,
+            self.x_ip,
+            self.best_known_position,
+            global_best_param_groups,
+            self.param_groups,
+        ):
 
             position_group_params = position_group['params']
             velocity_group_params = velocity_group['params']
@@ -86,13 +97,15 @@ class ChaoticParticle(GenericParticle):
             new_velocity_params = []
             new_x_ip_params = []
             new_u_ip_params = []
-            for x, u, x_ip, u_ip, pb, gb, m in zip(position_group_params,
-                                                   velocity_group_params,
-                                                   x_ip_group_params,
-                                                   u_ip_group_params,
-                                                   personal_best_params,
-                                                   global_best_params,
-                                                   master_params):
+            for x, u, x_ip, u_ip, pb, gb, m in zip(
+                position_group_params,
+                velocity_group_params,
+                x_ip_group_params,
+                u_ip_group_params,
+                personal_best_params,
+                global_best_params,
+                master_params,
+            ):
                 # rand_personal = torch.rand_like(u)
                 # rand_group = torch.rand_like(u)
                 # new_velocity = (self.inertial_weight * u
@@ -163,28 +176,31 @@ class ChaoticPSO(GenericPSO):
     https://www.researchgate.net/publication/220741402_Chaotic_particle_swarm_optimization
     """
 
-    def __init__(self,
-                 params: Iterable[torch.nn.Parameter],
-                 num_particles: int = 100,
-                 a: float = 0.02,
-                 b: float = 0.01,
-                 c: float = 0.01,
-                 beta: float = .001,
-                 k: float = 15.,
-                 epsilon: float = 1.,
-                 i0: float = 0.2,
-                 z: float = 0.7,
-                 max_param_value: float = -10,
-                 min_param_value: float = 10):
-        particle_kwargs = {'a': a,
-                           'b': b,
-                           'c': c,
-                           'beta': beta,
-                           'k': k,
-                           'epsilon': epsilon,
-                           'i0': i0,
-                           'z': z,
-                           'max_param_value': max_param_value,
-                           'min_param_value': min_param_value,
-                           }
+    def __init__(
+        self,
+        params: Iterable[torch.nn.Parameter],
+        num_particles: int = 100,
+        a: float = 0.02,
+        b: float = 0.01,
+        c: float = 0.01,
+        beta: float = 0.001,
+        k: float = 15.0,
+        epsilon: float = 1.0,
+        i0: float = 0.2,
+        z: float = 0.7,
+        max_param_value: float = -10,
+        min_param_value: float = 10,
+    ):
+        particle_kwargs = {
+            'a': a,
+            'b': b,
+            'c': c,
+            'beta': beta,
+            'k': k,
+            'epsilon': epsilon,
+            'i0': i0,
+            'z': z,
+            'max_param_value': max_param_value,
+            'min_param_value': min_param_value,
+        }
         super().__init__(params, num_particles, particle_class=ChaoticParticle, particle_kwargs=particle_kwargs)

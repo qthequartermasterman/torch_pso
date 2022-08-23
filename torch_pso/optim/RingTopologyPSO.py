@@ -15,26 +15,33 @@ class RingTopologyPSO(ParticleSwarmOptimizer):
     This is called a "ring" because the network graph showing these connections has a single cycle.
     """
 
-    def __init__(self,
-                 params: Iterable[torch.nn.Parameter],
-                 num_neighbors: int = 2,
-                 inertial_weight: float = .9,
-                 cognitive_coefficient: float = 1.,
-                 social_coefficient: float = 1.,
-                 num_particles: int = 100,
-                 max_param_value: float = 10.,
-                 min_param_value: float = -10.):
-        super().__init__(params, inertial_weight, cognitive_coefficient, social_coefficient, num_particles,
-                         max_param_value, min_param_value)
+    def __init__(
+        self,
+        params: Iterable[torch.nn.Parameter],
+        num_neighbors: int = 2,
+        inertial_weight: float = 0.9,
+        cognitive_coefficient: float = 1.0,
+        social_coefficient: float = 1.0,
+        num_particles: int = 100,
+        max_param_value: float = 10.0,
+        min_param_value: float = -10.0,
+    ):
+        super().__init__(
+            params,
+            inertial_weight,
+            cognitive_coefficient,
+            social_coefficient,
+            num_particles,
+            max_param_value,
+            min_param_value,
+        )
         self.losses = {i: (particle.position, torch.inf) for i, particle in enumerate(self.particles)}
         self.num_neighbors = num_neighbors
 
     def _find_minimum_of_neighbors(self, particle_index: int) -> List[Dict]:
         neighbors = [(particle_index + i) % len(self.particles) for i in range(self.num_neighbors)]
 
-        best = sorted([self.losses[n] for n in neighbors],
-                      key=lambda x: x[1],
-                      reverse=True)[0]
+        best = sorted([self.losses[n] for n in neighbors], key=lambda x: x[1], reverse=True)[0]
         return clone_param_groups(best[0])
 
     @torch.no_grad()

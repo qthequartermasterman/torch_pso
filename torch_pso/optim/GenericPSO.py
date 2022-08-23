@@ -53,6 +53,7 @@ class GenericParticle(ABC):
     """
     Generic particle class that contains functionality to (almost) all particle types
     """
+
     def __init__(self, *args, **kwargs):
         self.position: List[Dict] = []
         self.param_groups: List[Dict] = []
@@ -82,23 +83,26 @@ class GenericPSO(Optimizer):
     """
     Generic PSO contains functionality common to (almost) all particle swarm optimization algorithms.
     """
+
     subclasses = []
 
-    def __init__(self,
-                 params: Iterable[torch.nn.Parameter],
-                 num_particles: int = 100,
-                 particle_class: Type[GenericParticle] = GenericParticle,
-                 particle_args: Optional[List] = None,
-                 particle_kwargs: Optional[Dict] = None
-                 ):
+    def __init__(
+        self,
+        params: Iterable[torch.nn.Parameter],
+        num_particles: int = 100,
+        particle_class: Type[GenericParticle] = GenericParticle,
+        particle_args: Optional[List] = None,
+        particle_kwargs: Optional[Dict] = None,
+    ):
         defaults = {}
         super().__init__(params, defaults)
         if particle_args is None:
             particle_args = []
         if particle_kwargs is None:
             particle_kwargs = {}
-        self.particles: List[particle_class] = [particle_class(self.param_groups, *particle_args, **particle_kwargs)
-                                                for _ in range(num_particles)]
+        self.particles: List[particle_class] = [
+            particle_class(self.param_groups, *particle_args, **particle_kwargs) for _ in range(num_particles)
+        ]
 
         self.best_known_global_param_groups = clone_param_groups(self.param_groups)
         self.best_known_global_loss_value = torch.inf
