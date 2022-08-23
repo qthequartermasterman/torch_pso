@@ -59,7 +59,7 @@ class GenericParticle(ABC):
         self.param_groups: List[Dict] = []
 
     @abstractmethod
-    def step(self, closure: Callable[[], torch.Tensor], global_best_param_groups: List[Dict]) -> torch.Tensor:
+    def step(self, closure: Callable[[], torch.Tensor], global_best_param_groups: List[Dict], **kwargs) -> torch.Tensor:
         """
         Particle will take one step.
         :param closure: A callable that reevaluates the model and returns the loss.
@@ -108,15 +108,18 @@ class GenericPSO(Optimizer):
         self.best_known_global_loss_value = torch.inf
 
     @torch.no_grad()
-    def step(self, closure: Callable[[], torch.Tensor]) -> torch.Tensor:
+    def step(self, closure: Callable[[], torch.Tensor], particle_step_kwargs: Optional[Dict] = None) -> torch.Tensor:
         """
         Performs a single optimization step.
 
+        :param particle_step_kwargs: Dict of keyword arguments to pass to the particle step function, if needed.
         :param closure: A callable that reevaluates the model and returns the loss.
         :return: the final loss after the step (as calculated by the closure)
         """
+        if particle_step_kwargs is None:
+            particle_step_kwargs = {}
         for particle in self.particles:
-            particle_loss = particle.step(closure, self.best_known_global_param_groups)
+            particle_loss = particle.step(closure, self.best_known_global_param_groups, **particle_step_kwargs)
             if particle_loss < self.best_known_global_loss_value:
                 self.best_known_global_param_groups = clone_param_groups(particle.position)
                 self.best_known_global_loss_value = particle_loss
