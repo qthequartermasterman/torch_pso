@@ -278,7 +278,7 @@ class DolphinPodOptimizer(GenericPSO):
                            'max_param_value': max_param_value,
                            'min_param_value': min_param_value,
                            }
-        print(particle_kwargs)
+        # print(particle_kwargs)
         super().__init__(params, num_particles, particle_class=DolphinPodParticle, particle_kwargs=particle_kwargs)
         self.worst_current_global_param_groups = clone_param_groups(self.param_groups)
         self.worst_current_global_loss_value = -torch.inf
@@ -310,10 +310,10 @@ class DolphinPodOptimizer(GenericPSO):
                 self.worst_current_global_loss_value = particle_loss
 
         self._update_master_parms()
-        print(self.time_step)
-        print([particle.position for particle in self.particles])
-        print(self.param_groups)
-        print()
+        # print(self.time_step)
+        # print([particle.position for particle in self.particles])
+        # print(self.param_groups)
+        # print()
         return closure()  # loss = closure()
 
     def _calculate_pod_attraction(self, particle: DolphinPodParticle) -> List[Dict]:

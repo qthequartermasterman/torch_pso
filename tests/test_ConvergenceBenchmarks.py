@@ -12,7 +12,7 @@ from typing import Type
 
 import pytest
 import torch
-from torch import Tensor
+from torch import Tensor, exp, cos, sqrt, e, pi
 
 from tests.test_utils import optimizer_tests, close_to_a_minimum
 from torch_pso import GenericPSO
@@ -205,3 +205,63 @@ def test_goldstein_price_converges(optimizer_type):
                                     atol=1e-1,
                                     rtol=1e-1,
                                     max_iterations=5000)
+
+
+@optimizer_tests(ignore=['DolphinPodOptimizer', 'RingTopologyPSO'])
+def test_ackley_function(optimizer_type):
+    class AckleyModule(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.weights = torch.nn.Parameter(torch.rand((2,)))
+            self.global_minima = [torch.Tensor([0., 0.])]
+
+        def forward(self, x):
+            x, y = self.weights
+            return -20 * exp(-.2 * sqrt(0.5 * (x ** 2 + y ** 2))) - exp(
+                0.5 * (cos(2 * pi * x) + cos(2 * pi * y))) + e + 20
+
+    return generic_convergence_test(optimizer_type=optimizer_type,
+                                    net=AckleyModule(),
+                                    atol=1e-1,
+                                    rtol=1e-1,
+                                    max_iterations=1000)
+
+
+class SphereModule(torch.nn.Module):
+    def __init__(self, num_dimensions):
+        super().__init__()
+        self.weights = torch.nn.Parameter(torch.rand((num_dimensions,)))
+        self.num_dimensions = num_dimensions
+        # Sphere function has a global minimum at the origin, regardless of dimension
+        self.global_minima = [torch.zeros_like(self.weights)]
+
+    def forward(self, x):
+        x = self.weights
+        return (x ** 2).sum()
+
+
+@optimizer_tests(ignore=['DolphinPodOptimizer', 'RingTopologyPSO'])
+def test_sphere2_converges(optimizer_type):
+    return generic_convergence_test(optimizer_type=optimizer_type,
+                                    net=SphereModule(num_dimensions=2),
+                                    atol=1e-1,
+                                    rtol=1e-1,
+                                    max_iterations=1000)
+
+@pytest.mark.skip('Difficult convergence test.')
+@optimizer_tests(ignore=['RingTopologyPSO'])
+def test_sphere5_converges(optimizer_type):
+    return generic_convergence_test(optimizer_type=optimizer_type,
+                                    net=SphereModule(num_dimensions=5),
+                                    atol=1e-1,
+                                    rtol=1e-1,
+                                    max_iterations=1000)
+
+@pytest.mark.skip('Difficult convergence test.')
+@optimizer_tests(ignore=['RingTopologyPSO'])
+def test_sphere10_converges(optimizer_type):
+    return generic_convergence_test(optimizer_type=optimizer_type,
+                                    net=SphereModule(num_dimensions=10),
+                                    atol=1e-1,
+                                    rtol=1e-1,
+                                    max_iterations=1000)
