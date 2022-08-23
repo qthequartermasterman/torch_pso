@@ -86,8 +86,8 @@ class GenericPSO(Optimizer):
 
     def __init__(self,
                  params: Iterable[torch.nn.Parameter],
-                 num_particles: int,
-                 particle_class: Type[GenericParticle],
+                 num_particles: int = 100,
+                 particle_class: Type[GenericParticle] = GenericParticle,
                  particle_args: Optional[List] = None,
                  particle_kwargs: Optional[Dict] = None
                  ):

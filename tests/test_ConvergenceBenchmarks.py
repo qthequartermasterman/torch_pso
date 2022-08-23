@@ -1,22 +1,51 @@
+"""
+Benchmark functions to test optimizers for convergence. This module allows us to make sure our custom optimizers
+actually do (quickly) converge on various functions of varying difficulties.
+
+Most of these benchmarks are described more in-depth on Wikipedia:
+https://en.wikipedia.org/wiki/Test_functions_for_optimization
+
+New Benchmark functions can be added by creating a new python function of name `test_*` that takes an optimizer type.
+A `generic_convergence_test` function and `@optimizer_tests` decorator are provided for convenience.
+"""
+from typing import Type
+
 import pytest
 import torch
 from torch import Tensor
 
 from tests.test_utils import optimizer_tests, close_to_a_minimum
+from torch_pso import GenericPSO
 
 
-def generic_convergence_test(optimizer_type, net: torch.nn.Module, atol: float, rtol: float, max_iterations: int):
+def generic_convergence_test(optimizer_type: Type[GenericPSO],
+                             net: torch.nn.Module,
+                             atol: float,
+                             rtol: float,
+                             max_iterations: int):
+    """
+    Generic convergence test function for a given optimizer. Checks to make sure it gets relatively close to a
+    global minima for the network within max_iterations.
+    :param optimizer_type: Optimizer to test for convergence
+    :param net: network whose parameters are to be optimized
+    :param atol: absolute tolerance level. For more details see `torch.allclose`.
+    :param rtol: relative tolerance level. For more details see `torch.allclose`.
+    :param max_iterations: maximum number of optimization iterations
+    :return:
+    """
     optim = optimizer_type(net.parameters())
-
     global_minima = net.global_minima
 
     @torch.no_grad()
     def closure():
+        """Function that calculates the output of net given its current parameters."""
         optim.zero_grad()
         return net(None)
 
     # Make sure we don't start out satisfying the condition
-    assert not close_to_a_minimum(net.weights, global_minima, atol / 100, rtol / 100), \
+    # We decrease the tolerances by 3 orders of magnitudes because it's okay if we start close, we just don't want to
+    # start exactly on the solution
+    assert not close_to_a_minimum(net.weights, global_minima, atol / 1000, rtol / 1000), \
         f'Convergence test started too close: {optimizer_type}, {net}'
 
     converged = False
