@@ -6,18 +6,12 @@ from .GenericPSO import clone_param_groups, _initialize_param_groups, GenericPar
 
 
 class ChaoticParticle(GenericParticle):
-    def __init__(self,
-                 param_groups,
-                 a: float,
-                 b: float,
-                 c: float,
-                 beta: float,
-                 k: float,
-                 epsilon: float,
-                 i0: float,
-                 z: float,
-                 max_param_value: float,
-                 min_param_value: float):
+    """
+    Particle functionality for the Chaotic Particle Swarm Optimization algorithm.
+    """
+    def __init__(self, param_groups, a: float, b: float, c: float, beta: float, k: float, epsilon: float, i0: float,
+                 z: float, max_param_value: float, min_param_value: float, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         if a <= 0:
             raise ValueError(f'A must be a positive constant, not of value {a}.')
         if b <= 0:
@@ -40,7 +34,6 @@ class ChaoticParticle(GenericParticle):
         self.max_param_value = max_param_value
         self.min_param_value = min_param_value
 
-        magnitude = abs(max_param_value - min_param_value)
         self.position = _initialize_param_groups(param_groups, max_param_value, min_param_value)
         # self.velocity = _initialize_param_groups(param_groups, magnitude, -magnitude)
         self.velocity = _initialize_param_groups(param_groups, 0, 0)
@@ -129,7 +122,7 @@ class ChaoticParticle(GenericParticle):
 
                 self._z *= 1 - self.beta
 
-                self.k = 30 - 15*(self._z0 - self._z)/self._z0
+                self.k = 30 - 15 * (self._z0 - self._z) / self._z0
 
                 new_velocity_params.append(new_velocity)
                 new_position_params.append(new_position)
@@ -169,6 +162,7 @@ class ChaoticPSO(GenericPSO):
 
     https://www.researchgate.net/publication/220741402_Chaotic_particle_swarm_optimization
     """
+
     def __init__(self,
                  params: Iterable[torch.nn.Parameter],
                  num_particles: int = 100,
@@ -189,7 +183,7 @@ class ChaoticPSO(GenericPSO):
                            'k': k,
                            'epsilon': epsilon,
                            'i0': i0,
-                           'z':z,
+                           'z': z,
                            'max_param_value': max_param_value,
                            'min_param_value': min_param_value,
                            }

@@ -6,13 +6,12 @@ from .GenericPSO import clone_param_groups, _initialize_param_groups, GenericPar
 
 
 class AcceleratedParticle(GenericParticle):
-    def __init__(self,
-                 param_groups,
-                 alpha: float,
-                 beta: float,
-                 decay_parameter:float,
-                 max_param_value: float,
-                 min_param_value: float):
+    """
+    Particle functionality for the Accelerated Particle Swarm Optimization
+    """
+    def __init__(self, param_groups, alpha: float, beta: float, decay_parameter: float, max_param_value: float,
+                 min_param_value: float, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         if not 0 < beta < 1:
             raise ValueError(f'Beta must be a positive constant, not of value {beta}.')
         if not 0 < decay_parameter < 1:
@@ -50,7 +49,7 @@ class AcceleratedParticle(GenericParticle):
             for p, gb, m in zip(position_group_params,
                                 global_best_params, master_params):
                 rand_group = torch.rand_like(p)
-                new_position = (1-self.beta)*p + self.beta*gb + self.alpha*rand_group
+                new_position = (1 - self.beta) * p + self.beta * gb + self.alpha * rand_group
                 new_position_params.append(new_position)
                 m.data = new_position.data  # Update the model, so we can use it for calculating loss
             position_group['params'] = new_position_params

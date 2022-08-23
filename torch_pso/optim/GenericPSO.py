@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod, ABCMeta
+from abc import ABC, abstractmethod
 from typing import Dict, List, Callable, Type, Iterable, Optional
 
 import torch
@@ -50,6 +50,9 @@ def _initialize_param_groups(param_groups: List[Dict], max_param_value, min_para
 
 
 class GenericParticle(ABC):
+    """
+    Generic particle class that contains functionality to (almost) all particle types
+    """
     def __init__(self, *args, **kwargs):
         self.position: List[Dict] = []
         self.param_groups: List[Dict] = []
@@ -76,10 +79,18 @@ class GenericParticle(ABC):
 
 
 class GenericPSO(Optimizer):
+    """
+    Generic PSO contains functionality common to (almost) all particle swarm optimization algorithms.
+    """
     subclasses = []
 
-    def __init__(self, params: Iterable[torch.nn.Parameter], num_particles: int, particle_class: Type[GenericParticle],
-                 particle_args: Optional[List] = None, particle_kwargs: Optional[Dict] = None):
+    def __init__(self,
+                 params: Iterable[torch.nn.Parameter],
+                 num_particles: int,
+                 particle_class: Type[GenericParticle],
+                 particle_args: Optional[List] = None,
+                 particle_kwargs: Optional[Dict] = None
+                 ):
         defaults = {}
         super().__init__(params, defaults)
         if particle_args is None:

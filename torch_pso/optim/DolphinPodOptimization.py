@@ -7,12 +7,25 @@ from .GenericPSO import clone_param_groups, _initialize_param_groups, GenericPar
 
 
 def unit_difference_of_two_param_groups_lists(b: List[Dict], x: List[Dict]) -> List[Dict]:
+    """
+    Calculate the unit vector (in param_group) in the same direction as the difference between vectors (as param_groups)
+    b and x. The two param_groups must have identical structure.
+    :param b: param_groups
+    :param x: param_groups
+    :return: a param_group that is the unit vector in the direction of b-x
+    """
     diff = difference_of_two_param_groups_lists(b, x)
     mag = magnitude_param_groups_list(diff)
     return multiply_param_groups_by_scalar(diff, mag)
 
 
 def sum_of_two_param_groups_lists(b: List[Dict], x: List[Dict]) -> List[Dict]:
+    """
+    Calculate the sum between vectors (as param_groups) b and x. The two param_groups must have identical structure.
+    :param b: param_groups
+    :param x: param_groups
+    :return: a param_group that is the sum b+x
+    """
     new_param_groups = []
     for b_group, x_group in zip(b, x):
         b_params = b_group['params']
@@ -27,6 +40,13 @@ def sum_of_two_param_groups_lists(b: List[Dict], x: List[Dict]) -> List[Dict]:
 
 
 def difference_of_two_param_groups_lists(b: List[Dict], x: List[Dict]) -> List[Dict]:
+    """
+    Calculate the difference between vectors (as param_groups) b and x. The two param_groups must have identical
+    structure.
+    :param b: param_groups
+    :param x: param_groups
+    :return: a param_group that is the difference b-x
+    """
     new_param_groups = []
     for b_group, x_group in zip(b, x):
         b_params = b_group['params']
@@ -54,6 +74,12 @@ def magnitude_param_groups_list(x: List[Dict]) -> torch.Tensor:
 
 
 def multiply_param_groups_by_scalar(x: List[Dict], scalar: Union[float, torch.Tensor]) -> List[Dict]:
+    """
+    Calculate the scalar product of `scalar` and x.
+    :param scalar: some scalar value by which to multiply every element of x
+    :param x: param_groups
+    :return: a param_group that is the product scalar*x
+    """
     new_param_groups = []
     for x_group in x:
         x_params = x_group['params']
@@ -67,15 +93,13 @@ def multiply_param_groups_by_scalar(x: List[Dict], scalar: Union[float, torch.Te
 
 
 class DolphinPodParticle(GenericParticle):
-    def __init__(self,
-                 param_groups,
-                 time_step: float,
-                 xi: float,
-                 k: float,
-                 h: float,
-                 max_param_value: float,
-                 min_param_value: float):
+    """
+    Particle functionality for Dolphin Pod Optimization
+    """
+    def __init__(self, param_groups, time_step: float, xi: float, k: float, h: float, max_param_value: float,
+                 min_param_value: float, *args, **kwargs):
 
+        super().__init__(*args, **kwargs)
         self.xi = xi
         self.k = k
         self.h = h
@@ -86,8 +110,8 @@ class DolphinPodParticle(GenericParticle):
 
         # TODO: Initialize params according to paper
         self.position = _initialize_param_groups(param_groups, max_param_value, min_param_value)
-        magnitude = max_param_value+min_param_value
-        self.velocity = _initialize_param_groups(param_groups, -magnitude/2, magnitude/2)
+        magnitude = max_param_value + min_param_value
+        self.velocity = _initialize_param_groups(param_groups, -magnitude / 2, magnitude / 2)
         self.current_loss_value = torch.inf
 
         self.best_known_position = clone_param_groups(self.position)
@@ -96,6 +120,7 @@ class DolphinPodParticle(GenericParticle):
         self.worst_known_position = clone_param_groups(self.position)
         self.worst_known_loss_value = -torch.inf
 
+    # pylint-ignore:W0221
     def step(self,
              closure: Callable[[], torch.Tensor],
              global_best_param_groups: List[Dict],
@@ -104,6 +129,8 @@ class DolphinPodParticle(GenericParticle):
              ) -> torch.Tensor:
         """
         Particle will take one step.
+        :param pod_attractive_force: param_groups object that contains the pod attractive force vector
+        :param food_attractive_force: param_groups object that contains the food attractive force vector
         :param closure: A callable that reevaluates the model and returns the loss.
         :param global_best_param_groups: List of param_groups that yield the best found loss globally
         :return:
@@ -153,6 +180,11 @@ class DolphinPodParticle(GenericParticle):
         return new_loss
 
     def evaluate(self, closure: Callable[[], torch.Tensor]) -> torch.Tensor:
+        """
+        Calculate the loss (as given by closure) at the current position
+        :param closure: function that returns the loss at the current network parameters
+        :return: the loss of the current position
+        """
         for (position_group,
              master) in zip(self.position,
                             self.param_groups):
@@ -178,15 +210,20 @@ class DolphinPodParticle(GenericParticle):
         return new_loss
 
 
-def _calculate_max_time_step(num_particles: int, k, xi) -> float:
+def _calculate_max_time_step(num_particles: int, k: float, xi: float) -> float:
     zero = torch.zeros((num_particles, num_particles))
     identity = torch.eye(num_particles)
-    K = -k * (num_particles * identity - 1)
-    G = xi * identity
-    dynamical_matrix = torch.cat([torch.cat([zero, -K]), torch.cat([identity, -G])], dim=1)
-    eigenvals = [e for e in torch.linalg.eigvals(dynamical_matrix).tolist() if e.real <= 0]
-    t_max_candidates = [-2*e.real/(abs(e)**2) for e in eigenvals]
+    k_matrix = -k * (num_particles * identity - 1)
+    g_matrix = xi * identity
+    dynamical_matrix = torch.cat([torch.cat([zero, -k_matrix]), torch.cat([identity, -g_matrix])], dim=1)
+    eigenvalues = [e for e in torch.linalg.eigvals(dynamical_matrix).tolist() if e.real <= 0]
+    t_max_candidates = [-2 * e.real / (abs(e) ** 2) for e in eigenvalues]
     return min(t_max_candidates)
+
+
+def _count_dimensions(params: Iterable[torch.nn.Parameter]) -> int:
+    """Calculate the total number of elements in all Parameters in params"""
+    return sum(sum(p.size()) for p in params)
 
 
 class DolphinPodOptimizer(GenericPSO):
@@ -218,7 +255,7 @@ class DolphinPodOptimizer(GenericPSO):
                  min_param_value: float = 10):
         # TODO: Fix hyperparameter initialization, provide p and q instead of k h and timestep
         params = list(params)
-        dimensions = self._count_dimensions(params)
+        dimensions = _count_dimensions(params)
         if dimensions < 10:
             p = p or 8
             q = q or 1
@@ -325,6 +362,10 @@ class DolphinPodOptimizer(GenericPSO):
         return calculation
 
     def populate_best_known_values(self, closure: Callable[[], torch.Tensor]) -> None:
+        """
+        Update the best known values and the master parameters, according to the closure function
+        :param closure: function by which to calculate the loss value
+        """
         for particle in self.particles:
             particle_loss = particle.evaluate(closure)
             if particle_loss < self.best_known_global_loss_value:
@@ -334,6 +375,3 @@ class DolphinPodOptimizer(GenericPSO):
                 self.worst_current_global_param_groups = clone_param_groups(particle.position)
                 self.worst_current_global_loss_value = particle_loss
         self._update_master_parms()
-
-    def _count_dimensions(self, params: Iterable[torch.nn.Parameter]) -> int:
-        return sum(sum(p.size()) for p in params)

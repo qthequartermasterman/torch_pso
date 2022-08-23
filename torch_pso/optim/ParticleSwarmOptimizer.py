@@ -1,10 +1,8 @@
 from typing import List, Dict, Callable, Iterable
 
 import torch
-from torch.optim import Optimizer
 
-from torch_pso.optim.GenericPSO import clone_param_group, clone_param_groups, _initialize_param_groups, GenericParticle, \
-    GenericPSO
+from torch_pso.optim.GenericPSO import (clone_param_groups, _initialize_param_groups, GenericParticle, GenericPSO)
 
 
 class Particle(GenericParticle):
@@ -47,13 +45,10 @@ class Particle(GenericParticle):
     :param min_param_value: Minimum value of the parameters in the search space
     """
 
-    def __init__(self,
-                 param_groups: List[Dict],
-                 inertial_weight: float,
-                 cognitive_coefficient: float,
-                 social_coefficient: float,
-                 max_param_value: float = 10.,
-                 min_param_value: float = -10.):
+    def __init__(self, param_groups: List[Dict], inertial_weight: float, cognitive_coefficient: float,
+                 social_coefficient: float, max_param_value: float = 10., min_param_value: float = -10., *args,
+                 **kwargs):
+        super().__init__(*args, **kwargs)
         magnitude = abs(max_param_value - min_param_value)
         self.param_groups = param_groups
         self.position = _initialize_param_groups(param_groups, max_param_value, min_param_value)
@@ -109,8 +104,6 @@ class Particle(GenericParticle):
             self.best_known_position = clone_param_groups(self.position)
             self.best_known_loss_value = new_loss
         return new_loss
-
-
 
 
 class ParticleSwarmOptimizer(GenericPSO):
