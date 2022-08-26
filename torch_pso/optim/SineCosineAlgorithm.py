@@ -16,7 +16,7 @@ class SCAParticle(GenericParticle):
         self.position = _initialize_param_groups(param_groups, max_param_value, min_param_value)
 
         self.best_known_position = clone_param_groups(self.position)
-        self.best_known_loss_value = torch.inf
+        self.best_known_loss_value: torch.Tensor = torch.tensor(torch.inf)
 
         self.r1: torch.Tensor = torch.Tensor()
         self.r2: torch.Tensor = torch.Tensor()
@@ -24,9 +24,9 @@ class SCAParticle(GenericParticle):
         self.use_sine: bool = True
 
     def step(
-        self,
-        closure: Callable[[], torch.Tensor],
-        global_best_param_groups: List[Dict],
+            self,
+            closure: Callable[[], torch.Tensor],
+            global_best_param_groups: List[Dict],
     ) -> torch.Tensor:
         """
         Particle will take one step.
@@ -86,12 +86,12 @@ class SineCosineAlgorithm(GenericPSO):
     """
 
     def __init__(
-        self,
-        params: Iterable[torch.nn.Parameter],
-        num_particles: int = 100,
-        max_movement_radius: float = 2,
-        max_param_value: float = -10,
-        min_param_value: float = 10,
+            self,
+            params: Iterable[torch.nn.Parameter],
+            num_particles: int = 100,
+            max_movement_radius: float = 2,
+            max_param_value: float = -10,
+            min_param_value: float = 10,
     ):
         particle_kwargs = {
             'max_param_value': max_param_value,
@@ -105,7 +105,7 @@ class SineCosineAlgorithm(GenericPSO):
         self.initial_movement_radius = max_movement_radius
 
     @torch.no_grad()
-    def step(self, closure: Callable[[], torch.Tensor]) -> torch.Tensor:
+    def step(self, closure: Callable[[], torch.Tensor]) -> torch.Tensor:  # type: ignore[override]
         """
         Performs a single optimization step.
 

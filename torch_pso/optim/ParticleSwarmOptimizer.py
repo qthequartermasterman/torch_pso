@@ -1,4 +1,4 @@
-from typing import List, Dict, Callable, Iterable
+from typing import List, Dict, Callable, Iterable, cast
 
 import torch
 
@@ -62,7 +62,7 @@ class Particle(GenericParticle):
         self.position = _initialize_param_groups(param_groups, max_param_value, min_param_value)
         self.velocity = _initialize_param_groups(param_groups, magnitude, -magnitude)
         self.best_known_position = clone_param_groups(self.position)
-        self.best_known_loss_value = torch.inf
+        self.best_known_loss_value:torch.Tensor = torch.tensor(torch.inf)
 
         self.inertial_weight = inertial_weight
         self.cognitive_coefficient = cognitive_coefficient
@@ -180,6 +180,7 @@ class ParticleSwarmOptimizer(GenericPSO):
             'min_param_value': min_param_value,
         }
         super().__init__(params, num_particles, Particle, particle_kwargs=kwargs)
+        self.particles: List[Particle] = [cast(Particle, particle) for particle in self.particles]
 
         # defaults = {}
         # super().__init__(params, defaults)

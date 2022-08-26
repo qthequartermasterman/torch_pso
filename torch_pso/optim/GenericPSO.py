@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, List, Callable, Type, Iterable, Optional, Any, TypeVar, Generic
+from typing import Dict, List, Callable, Type, Iterable, Optional, Any, TypeVar, Generic, Sequence
 
 import torch
 from torch.optim import Optimizer
@@ -82,15 +82,15 @@ class GenericParticle(ABC):
         self.position = clone_param_groups(params)
 
 
-Particle = TypeVar('Particle', bound=Type[GenericParticle])
+ParticleType = TypeVar('ParticleType', bound=Type[GenericParticle])
 
 
-class GenericPSO(Optimizer, Generic[Particle]):
+class GenericPSO(Optimizer, Generic[ParticleType]):
     """
     Generic PSO contains functionality common to (almost) all particle swarm optimization algorithms.
     """
 
-    subclasses: List[Type['GenericPSO[Particle]']] = []
+    subclasses: List[Type['GenericPSO[ParticleType]']] = []
 
     def __init__(
             self,
@@ -107,14 +107,14 @@ class GenericPSO(Optimizer, Generic[Particle]):
             particle_args = []
         if particle_kwargs is None:
             particle_kwargs = {}
-        self.particles: List[GenericParticle] = [
+        self.particles: Sequence[GenericParticle] = [
             particle_class(self.param_groups, *particle_args, **particle_kwargs) for _ in range(num_particles)
         ]
         # We always want the initial params to be one of the particles
         self.particles[0].set_params(self.param_groups)
 
         self.best_known_global_param_groups = clone_param_groups(self.param_groups)
-        self.best_known_global_loss_value = torch.inf
+        self.best_known_global_loss_value: torch.Tensor = torch.tensor(torch.inf)
 
     @torch.no_grad()
     def step(self, closure: Callable[[], torch.Tensor]) -> torch.Tensor:  # type: ignore[override]
@@ -129,7 +129,7 @@ class GenericPSO(Optimizer, Generic[Particle]):
             particle_loss = particle.step(closure, self.best_known_global_param_groups)
             if particle_loss < self.best_known_global_loss_value:
                 self.best_known_global_param_groups = clone_param_groups(particle.position)
-                self.best_known_global_loss_value = particle_loss.item()
+                self.best_known_global_loss_value = particle_loss
 
         self._update_master_parms()
 

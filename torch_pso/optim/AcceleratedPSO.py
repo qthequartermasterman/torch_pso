@@ -37,7 +37,7 @@ class AcceleratedParticle(GenericParticle):
         self.position = _initialize_param_groups(param_groups, max_param_value, min_param_value)
 
         self.best_known_position = clone_param_groups(self.position)
-        self.best_known_loss_value = torch.inf
+        self.best_known_loss_value = torch.tensor(torch.inf)
 
     def step(self, closure: Callable[[], torch.Tensor], global_best_param_groups: List[Dict]) -> torch.Tensor:
         """

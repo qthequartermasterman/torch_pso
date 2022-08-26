@@ -45,7 +45,7 @@ class RingTopologyPSO(ParticleSwarmOptimizer):
         return clone_param_groups(best[0])
 
     @torch.no_grad()
-    def step(self, closure: Callable[[], torch.Tensor]) -> torch.Tensor:
+    def step(self, closure: Callable[[], torch.Tensor]) -> torch.Tensor:  # type: ignore[override]
         """
         Performs a single optimization step.
 
@@ -55,7 +55,7 @@ class RingTopologyPSO(ParticleSwarmOptimizer):
         losses = {}
         for i, particle in enumerate(self.particles):
             particle_loss = particle.step(closure, self._find_minimum_of_neighbors(i))
-            losses[i] = (particle.position, particle_loss)
+            losses[i] = (particle.position, particle_loss.item())
             if particle_loss < self.best_known_global_loss_value:
                 self.best_known_global_param_groups = clone_param_groups(particle.position)
                 self.best_known_global_loss_value = particle_loss

@@ -119,7 +119,7 @@ class ImprovedSineCosineAlgorithm(GenericPSO):
         ) + self.a_end
 
     @torch.no_grad()
-    def step(self, closure: Callable[[], torch.Tensor]) -> torch.Tensor:
+    def step(self, closure: Callable[[], torch.Tensor]) -> torch.Tensor:  # type: ignore[override]
         """
         Performs a single optimization step.
 

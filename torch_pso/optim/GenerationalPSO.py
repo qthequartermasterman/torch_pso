@@ -50,7 +50,7 @@ class GenerationalPSO(ParticleSwarmOptimizer):
             )
 
     @torch.no_grad()
-    def step(self, closure: Callable[[], torch.Tensor]) -> float:
+    def step(self, closure: Callable[[], torch.Tensor]) -> torch.Tensor:  # type: ignore[override]
         """
         Performs a single optimization step.
 
@@ -60,7 +60,7 @@ class GenerationalPSO(ParticleSwarmOptimizer):
         losses = {}
         for i, particle in enumerate(self.particles):
             particle_loss = particle.step(closure, self.best_known_global_param_groups)
-            losses[i] = particle_loss
+            losses[i] = particle_loss.item()
             if particle_loss < self.best_known_global_loss_value:
                 self.best_known_global_param_groups = clone_param_groups(particle.position)
                 self.best_known_global_loss_value = particle_loss
@@ -72,7 +72,7 @@ class GenerationalPSO(ParticleSwarmOptimizer):
                 master_group['params'][i].data = clone[i].data
 
         # Respawn a certain proportion of the worst performing particles, chosen at random
-        best_performers_indices = list(sorted(losses, key=losses.get, reverse=True))
+        best_performers_indices = list(sorted(losses, key=lambda x: losses[x], reverse=True))
         bottom_performers = best_performers_indices[self.keep_top_performers:]
         indices_to_respawn = random.sample(bottom_performers, round(self.generational_turnover_ratio * len(losses)))
         for index in indices_to_respawn:
@@ -85,4 +85,4 @@ class GenerationalPSO(ParticleSwarmOptimizer):
                 min_param_value=self.min_param_value,
             )
 
-        return closure().item()  # loss = closure()
+        return closure()  # loss = closure()

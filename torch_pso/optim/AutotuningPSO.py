@@ -37,7 +37,7 @@ class AutotuningPSO(ParticleSwarmOptimizer):
         self.current_step = 0
 
     @torch.no_grad()
-    def step(self, closure: Callable[[], torch.Tensor], n: Optional[int] = None) -> torch.Tensor:
+    def step(self, closure: Callable[[], torch.Tensor], n: Optional[int] = None) -> torch.Tensor:  # type: ignore[override]
         """
         Performs a single optimization step. This is a standard PSO step, followed by a weight adjustment.
 

@@ -1,7 +1,7 @@
 import logging
 import random
 from functools import reduce
-from typing import Callable, List, Dict, Iterable, Union, Optional
+from typing import Callable, List, Dict, Iterable, Union, Optional, cast
 
 import torch
 
@@ -125,13 +125,13 @@ class DolphinPodParticle(GenericParticle):
         self.position = _initialize_param_groups(param_groups, max_param_value, min_param_value)
         magnitude = max_param_value + min_param_value
         self.velocity = _initialize_param_groups(param_groups, -magnitude / 2, magnitude / 2)
-        self.current_loss_value = torch.inf
+        self.current_loss_value = torch.tensor(torch.inf)
 
         self.best_known_position = clone_param_groups(self.position)
-        self.best_known_loss_value = torch.inf
+        self.best_known_loss_value = torch.tensor(torch.inf)
 
         self.worst_known_position = clone_param_groups(self.position)
-        self.worst_known_loss_value = -torch.inf
+        self.worst_known_loss_value = -torch.tensor(torch.inf)
 
         self.pod_attractive_force: List[Dict] = []
         self.food_attractive_force: List[Dict] = []
@@ -271,6 +271,7 @@ class DolphinPodOptimizer(GenericPSO):
             min_param_value: float = 10,
     ):
         # TODO: Fix hyperparameter initialization, provide p and q instead of k h and timestep
+        self.particles: List[DolphinPodParticle] = [cast(DolphinPodParticle, particle) for particle in self.particles]
         params = list(params)
         dimensions = _count_dimensions(params)
         if dimensions < 10:
@@ -302,10 +303,10 @@ class DolphinPodOptimizer(GenericPSO):
         # print(particle_kwargs)
         super().__init__(params, num_particles, particle_class=DolphinPodParticle, particle_kwargs=particle_kwargs)
         self.worst_current_global_param_groups = clone_param_groups(self.param_groups)
-        self.worst_current_global_loss_value = -torch.inf
+        self.worst_current_global_loss_value = -torch.tensor(torch.inf)
 
     @torch.no_grad()
-    def step(self, closure: Callable[[], torch.Tensor]) -> torch.Tensor:
+    def step(self, closure: Callable[[], torch.Tensor]) -> torch.Tensor:  # type: ignore[override]
         """
         Performs a single optimization step.
 
@@ -315,11 +316,13 @@ class DolphinPodOptimizer(GenericPSO):
         self.populate_best_known_values(closure)
 
         for particle in self.particles:
-            self.worst_current_global_loss_value = -torch.inf  # Reset the worst particle loss for each step
+            if not isinstance(particle, DolphinPodParticle):
+                raise TypeError(f'Particle for DolphinPodOptimizer must be DolphinPodParticle, not {type(particle)}')
+            self.worst_current_global_loss_value = -torch.tensor(torch.inf)  # Reset the worst particle loss for each step
             pod_attraction_force: List[Dict] = self._calculate_pod_attraction(particle)
             food_attraction_force: List[Dict] = self._calculate_food_attraction(particle)
-            particle.pod_attraction_force = pod_attraction_force
-            particle.food_attraction_force = food_attraction_force
+            particle.pod_attractive_force = pod_attraction_force
+            particle.food_attractive_force = food_attraction_force
             particle_loss = particle.step(
                 # closure, self.best_known_global_param_groups, pod_attraction_force, food_attraction_force
                 closure, self.best_known_global_param_groups
@@ -371,7 +374,7 @@ class DolphinPodOptimizer(GenericPSO):
             addends.append(addend)
         return reduce(sum_of_two_param_groups_lists, addends)
 
-    def f_hat(self, particle1: DolphinPodParticle, particle2: DolphinPodParticle) -> float:
+    def f_hat(self, particle1: DolphinPodParticle, particle2: DolphinPodParticle) -> torch.Tensor:
         """
         F-hat roughly measures how small is the difference between particle 1's position and particle2's best
         position compared to the absolute best and worst
