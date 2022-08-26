@@ -85,12 +85,12 @@ class GenericParticle(ABC):
 ParticleType = TypeVar('ParticleType', bound=Type[GenericParticle])
 
 
-class GenericPSO(Optimizer, Generic[ParticleType]):
+class GenericPSO(Optimizer):
     """
     Generic PSO contains functionality common to (almost) all particle swarm optimization algorithms.
     """
 
-    subclasses: List[Type['GenericPSO[ParticleType]']] = []
+    subclasses: List[Type['GenericPSO']] = []
 
     def __init__(
             self,
