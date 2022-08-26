@@ -1,3 +1,5 @@
+import logging
+import random
 from functools import reduce
 from typing import Callable, List, Dict, Iterable, Union, Optional
 
@@ -98,16 +100,16 @@ class DolphinPodParticle(GenericParticle):
     """
 
     def __init__(
-        self,
-        param_groups,
-        time_step: float,
-        xi: float,
-        k: float,
-        h: float,
-        max_param_value: float,
-        min_param_value: float,
-        *args,
-        **kwargs,
+            self,
+            param_groups,
+            time_step: float,
+            xi: float,
+            k: float,
+            h: float,
+            max_param_value: float,
+            min_param_value: float,
+            *args,
+            **kwargs,
     ):
 
         super().__init__(*args, **kwargs)
@@ -131,14 +133,15 @@ class DolphinPodParticle(GenericParticle):
         self.worst_known_position = clone_param_groups(self.position)
         self.worst_known_loss_value = -torch.inf
 
-    # pylint-ignore:W0221
-    def step(
-        self,
-        closure: Callable[[], torch.Tensor],
-        global_best_param_groups: List[Dict],
-        pod_attractive_force: List[Dict],
-        food_attractive_force: List[Dict],
-    ) -> torch.Tensor:
+        self.pod_attractive_force: List[Dict] = []
+        self.food_attractive_force: List[Dict] = []
+
+    def step(self,
+             closure: Callable[[], torch.Tensor],
+             global_best_param_groups: List[Dict],
+             # pod_attractive_force: List[Dict],
+             # food_attractive_force: List[Dict],
+             ) -> torch.Tensor:
         """
         Particle will take one step.
         :param pod_attractive_force: param_groups object that contains the pod attractive force vector
@@ -148,10 +151,13 @@ class DolphinPodParticle(GenericParticle):
         :return:
         """
 
+        pod_attractive_force: List[Dict] = self.pod_attractive_force
+        food_attractive_force: List[Dict] = self.food_attractive_force
         # TODO: Update velocity and position
 
+        velocity_is_zero = True
         for (position_group, velocity_group, pod_attractive_group, food_attractive_group, master) in zip(
-            self.position, self.velocity, pod_attractive_force, food_attractive_force, self.param_groups
+                self.position, self.velocity, pod_attractive_force, food_attractive_force, self.param_groups
         ):
 
             position_group_params = position_group['params']
@@ -163,17 +169,22 @@ class DolphinPodParticle(GenericParticle):
             new_position_params = []
             new_velocity_params = []
             for p, v, pod, food, m in zip(
-                position_group_params, velocity_group_params, pod_params, food_params, master_params
+                    position_group_params, velocity_group_params, pod_params, food_params, master_params
             ):
                 new_velocity = (1 - self.xi * self.time_step) * v + self.time_step * (-self.k * pod + self.h * food)
                 new_velocity_params.append(new_velocity)
                 new_position = p + new_velocity * self.time_step
+                if torch.allclose(new_velocity, torch.tensor(1e-3)):
+                    velocity_is_zero = False
                 new_position_params.append(new_position)
                 m.data = new_position.data  # Update the model, so we can use it for calculating loss
             position_group['params'] = new_position_params
             velocity_group['params'] = new_velocity_params
 
         self._update_params()
+        # if velocity_is_zero and random.random()>.5:
+        #     self.position = _initialize_param_groups(self.param_groups, self.max_param_value, self.min_param_value)
+        #     logging.info('Dolphin Pod Particle converged. Reinitializing.')
 
         # Calculate new loss after moving and update the best known position if we're in a better spot
         new_loss = closure()
@@ -246,18 +257,18 @@ class DolphinPodOptimizer(GenericPSO):
     """
 
     def __init__(
-        self,
-        params: Iterable[torch.nn.Parameter],
-        num_particles: Optional[int] = None,
-        alpha: Optional[float] = None,
-        xi: Optional[float] = None,
-        p: Optional[float] = None,
-        q: Optional[float] = None,
-        # time_step: float = .001,
-        # k: float = .2,
-        # h: float = .2,
-        max_param_value: float = -10,
-        min_param_value: float = 10,
+            self,
+            params: Iterable[torch.nn.Parameter],
+            num_particles: Optional[int] = None,
+            alpha: Optional[float] = None,
+            xi: Optional[float] = None,
+            p: Optional[float] = None,
+            q: Optional[float] = None,
+            # time_step: float = .001,
+            # k: float = .2,
+            # h: float = .2,
+            max_param_value: float = -10,
+            min_param_value: float = 10,
     ):
         # TODO: Fix hyperparameter initialization, provide p and q instead of k h and timestep
         params = list(params)
@@ -307,9 +318,11 @@ class DolphinPodOptimizer(GenericPSO):
             self.worst_current_global_loss_value = -torch.inf  # Reset the worst particle loss for each step
             pod_attraction_force: List[Dict] = self._calculate_pod_attraction(particle)
             food_attraction_force: List[Dict] = self._calculate_food_attraction(particle)
-
+            particle.pod_attraction_force = pod_attraction_force
+            particle.food_attraction_force = food_attraction_force
             particle_loss = particle.step(
-                closure, self.best_known_global_param_groups, pod_attraction_force, food_attraction_force
+                # closure, self.best_known_global_param_groups, pod_attraction_force, food_attraction_force
+                closure, self.best_known_global_param_groups
             )
             if particle_loss < self.best_known_global_loss_value:
                 self.best_known_global_param_groups = clone_param_groups(particle.position)
@@ -353,7 +366,7 @@ class DolphinPodOptimizer(GenericPSO):
             magnitude_of_diff = magnitude_param_groups_list(
                 difference_of_two_param_groups_lists(particle_i.best_known_position, particle.position)
             )
-            coefficient = 2 * f_hat / (1 + magnitude_of_diff**self.alpha)
+            coefficient = 2 * f_hat / (1 + magnitude_of_diff ** self.alpha)
             addend = multiply_param_groups_by_scalar(direction, coefficient)
             addends.append(addend)
         return reduce(sum_of_two_param_groups_lists, addends)

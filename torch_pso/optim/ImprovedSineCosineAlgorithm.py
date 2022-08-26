@@ -11,23 +11,24 @@ class ImprovedSCAParticle(SCAParticle):
     def __init__(self, param_groups, max_param_value: float, min_param_value: float):
 
         super().__init__(param_groups, max_param_value, min_param_value)
+        self.w: float = 0
 
-    def step(
-        self,
-        closure: Callable[[], torch.Tensor],
-        global_best_param_groups: List[Dict],
-        r1: torch.Tensor,
-        r2: torch.Tensor,
-        r3: torch.Tensor,
-        use_sine: bool,
-        w: float,
-    ) -> torch.Tensor:
+    def step(self,
+             closure: Callable[[], torch.Tensor],
+             global_best_param_groups: List[Dict],
+             ) -> torch.Tensor:
         """
         Particle will take one step.
         :param closure: A callable that reevaluates the model and returns the loss.
         :param global_best_param_groups: List of param_groups that yield the best found loss globally
         :return:
         """
+
+        r1: torch.Tensor = self.r1
+        r2: torch.Tensor = self.r2
+        r3: torch.Tensor = self.r3
+        use_sine: bool = self.use_sine
+        w: float = self.w
         # Because our parameters are not a single tensor, we have to iterate over each group, and then each param in
         # each group.
         for position_group, global_best, master in zip(self.position, global_best_param_groups, self.param_groups):
@@ -73,17 +74,17 @@ class ImprovedSineCosineAlgorithm(GenericPSO):
     """
 
     def __init__(
-        self,
-        params: Iterable[torch.nn.Parameter],
-        num_particles: int = 100,
-        a_start: float = 2,
-        a_end: float = 0,
-        max_time_steps: int = 1000,
-        w_end: float = 0,
-        w_start: float = 0.1,
-        k: float = 15.0,
-        max_param_value: float = -10,
-        min_param_value: float = 10,
+            self,
+            params: Iterable[torch.nn.Parameter],
+            num_particles: int = 100,
+            a_start: float = 2,
+            a_end: float = 0,
+            max_time_steps: int = 1000,
+            w_end: float = 0,
+            w_start: float = 0.1,
+            k: float = 15.0,
+            max_param_value: float = -10,
+            min_param_value: float = 10,
     ):
         particle_kwargs = {
             'max_param_value': max_param_value,
@@ -107,14 +108,14 @@ class ImprovedSineCosineAlgorithm(GenericPSO):
         Calculate the inertial weight of the particle at the current time step.
         """
         return (
-            self.w_end
-            + (self.w_start - self.w_end) * (self.max_time_steps - self.current_time_step) / self.max_time_steps
+                self.w_end
+                + (self.w_start - self.w_end) * (self.max_time_steps - self.current_time_step) / self.max_time_steps
         )
 
     def r1(self):
         """Calculate the r1 value for the current timestep"""
         return (self.a_start - self.a_end) * math.exp(
-            -self.current_time_step**2 / (self.k * self.max_time_steps) ** 2
+            -self.current_time_step ** 2 / (self.k * self.max_time_steps) ** 2
         ) + self.a_end
 
     @torch.no_grad()
@@ -131,4 +132,11 @@ class ImprovedSineCosineAlgorithm(GenericPSO):
         r1 = self.r1()
         w = self.w()
         self.current_time_step += 1
-        return super().step(closure, particle_step_kwargs={'r1': r1, 'r2': r2, 'r3': r3, 'use_sine': use_sine, 'w': w})
+
+        # Update the particle params
+        particle_step_kwargs = {'r1': r1, 'r2': r2, 'r3': r3, 'use_sine': use_sine, 'w': w}
+        for particle in self.particles:
+            for key, value in particle_step_kwargs.items():
+                particle.__dict__[key] = value
+
+        return super().step(closure)

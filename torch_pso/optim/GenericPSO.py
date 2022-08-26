@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, List, Callable, Type, Iterable, Optional
+from typing import Dict, List, Callable, Type, Iterable, Optional, Any, TypeVar, Generic
 
 import torch
 from torch.optim import Optimizer
@@ -59,7 +59,7 @@ class GenericParticle(ABC):
         self.param_groups: List[Dict] = []
 
     @abstractmethod
-    def step(self, closure: Callable[[], torch.Tensor], global_best_param_groups: List[Dict], **kwargs) -> torch.Tensor:
+    def step(self, closure: Callable[[], torch.Tensor], global_best_param_groups: List[Dict]) -> torch.Tensor:
         """
         Particle will take one step.
         :param closure: A callable that reevaluates the model and returns the loss.
@@ -78,37 +78,46 @@ class GenericParticle(ABC):
         #         self.param_groups[i]['params'][j].data = self.param_groups[i]['params'][j].data
         pass
 
+    def set_params(self, params: List[Dict]):
+        self.position = clone_param_groups(params)
 
-class GenericPSO(Optimizer):
+
+Particle = TypeVar('Particle', bound=Type[GenericParticle])
+
+
+class GenericPSO(Optimizer, Generic[Particle]):
     """
     Generic PSO contains functionality common to (almost) all particle swarm optimization algorithms.
     """
 
-    subclasses = []
+    subclasses: List[Type['GenericPSO[Particle]']] = []
 
     def __init__(
-        self,
-        params: Iterable[torch.nn.Parameter],
-        num_particles: int = 100,
-        particle_class: Type[GenericParticle] = GenericParticle,
-        particle_args: Optional[List] = None,
-        particle_kwargs: Optional[Dict] = None,
+            self,
+            params: Iterable[torch.nn.Parameter],
+            num_particles: int = 100,
+            particle_class: Type[GenericParticle] = GenericParticle,
+            # particle_class: Particle = GenericParticle,
+            particle_args: Optional[List] = None,
+            particle_kwargs: Optional[Dict] = None,
     ):
-        defaults = {}
+        defaults: Dict[str, Any] = {}
         super().__init__(params, defaults)
         if particle_args is None:
             particle_args = []
         if particle_kwargs is None:
             particle_kwargs = {}
-        self.particles: List[particle_class] = [
+        self.particles: List[GenericParticle] = [
             particle_class(self.param_groups, *particle_args, **particle_kwargs) for _ in range(num_particles)
         ]
+        # We always want the initial params to be one of the particles
+        self.particles[0].set_params(self.param_groups)
 
         self.best_known_global_param_groups = clone_param_groups(self.param_groups)
         self.best_known_global_loss_value = torch.inf
 
     @torch.no_grad()
-    def step(self, closure: Callable[[], torch.Tensor], particle_step_kwargs: Optional[Dict] = None) -> torch.Tensor:
+    def step(self, closure: Callable[[], torch.Tensor]) -> torch.Tensor:  # type: ignore[override]
         """
         Performs a single optimization step.
 
@@ -116,26 +125,24 @@ class GenericPSO(Optimizer):
         :param closure: A callable that reevaluates the model and returns the loss.
         :return: the final loss after the step (as calculated by the closure)
         """
-        if particle_step_kwargs is None:
-            particle_step_kwargs = {}
         for particle in self.particles:
-            particle_loss = particle.step(closure, self.best_known_global_param_groups, **particle_step_kwargs)
+            particle_loss = particle.step(closure, self.best_known_global_param_groups)
             if particle_loss < self.best_known_global_loss_value:
                 self.best_known_global_param_groups = clone_param_groups(particle.position)
-                self.best_known_global_loss_value = particle_loss
+                self.best_known_global_loss_value = particle_loss.item()
 
         self._update_master_parms()
 
         return closure()  # loss = closure()
 
-    def _update_master_parms(self):
+    def _update_master_parms(self) -> None:
         """Set the module's parameters to be the best performing ones."""
         for master_group, best_group in zip(self.param_groups, self.best_known_global_param_groups):
             clone = clone_param_group(best_group)['params']
             for i in range(len(clone)):
                 master_group['params'][i].data = clone[i].data
 
-    def __init_subclass__(cls, **kwargs):
+    def __init_subclass__(cls, **kwargs) -> None:
         """Register all subclasses, so we can easily run the same test benchmarks on every subclass."""
         super().__init_subclass__(**kwargs)
         cls.subclasses.append(cls)

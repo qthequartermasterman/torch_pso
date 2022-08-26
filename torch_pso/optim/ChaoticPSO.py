@@ -159,7 +159,7 @@ class ChaoticParticle(GenericParticle):
         new_loss = closure()
         if new_loss < self.best_known_loss_value:
             self.best_known_position = clone_param_groups(self.position)
-            self.best_known_loss_value = new_loss
+            self.best_known_loss_value = new_loss.item()
         return new_loss
 
 
