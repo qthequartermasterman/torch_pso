@@ -1,5 +1,5 @@
 import math
-from typing import Callable, List, Dict, Iterable
+from typing import Callable, List, Dict, Iterable, Optional
 
 import torch
 
@@ -119,13 +119,15 @@ class ImprovedSineCosineAlgorithm(GenericPSO):
         ) + self.a_end
 
     @torch.no_grad()
-    def step(self, closure: Callable[[], torch.Tensor]) -> torch.Tensor:  # type: ignore[override]
+    def step(self, closure: Optional[Callable[[], torch.Tensor]] = None) -> Optional[torch.Tensor]:
         """
         Performs a single optimization step.
 
         :param closure: A callable that reevaluates the model and returns the loss.
         :return: the final loss after the step (as calculated by the closure)
         """
+        if closure is None:
+            raise TypeError('Closures are required for Particle Swarm Optimizers')
         r3 = 2 * torch.rand((1,))
         r2 = 2 * torch.pi * torch.rand((1,))
         use_sine = torch.rand((1,)).item() < 0.5

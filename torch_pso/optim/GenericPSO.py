@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, List, Callable, Type, Iterable, Optional, Any, TypeVar, Generic, Sequence
+from typing import Dict, List, Callable, Type, Iterable, Optional, Any, TypeVar, Sequence, ClassVar
 
 import torch
 from torch.optim import Optimizer
@@ -90,7 +90,7 @@ class GenericPSO(Optimizer):
     Generic PSO contains functionality common to (almost) all particle swarm optimization algorithms.
     """
 
-    subclasses: List[Type['GenericPSO']] = []
+    subclasses: ClassVar[List[Type['GenericPSO']]] = []
 
     def __init__(
             self,
@@ -117,14 +117,15 @@ class GenericPSO(Optimizer):
         self.best_known_global_loss_value: torch.Tensor = torch.tensor(torch.inf)
 
     @torch.no_grad()
-    def step(self, closure: Callable[[], torch.Tensor]) -> torch.Tensor:  # type: ignore[override]
+    def step(self, closure: Optional[Callable[[], torch.Tensor]] = None) -> Optional[torch.Tensor]:
         """
         Performs a single optimization step.
 
-        :param particle_step_kwargs: Dict of keyword arguments to pass to the particle step function, if needed.
         :param closure: A callable that reevaluates the model and returns the loss.
         :return: the final loss after the step (as calculated by the closure)
         """
+        if closure is None:
+            raise TypeError('Closures are required for Particle Swarm Optimizers')
         for particle in self.particles:
             particle_loss = particle.step(closure, self.best_known_global_param_groups)
             if particle_loss < self.best_known_global_loss_value:

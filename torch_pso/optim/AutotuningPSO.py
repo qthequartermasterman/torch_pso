@@ -37,17 +37,17 @@ class AutotuningPSO(ParticleSwarmOptimizer):
         self.current_step = 0
 
     @torch.no_grad()
-    def step(self, closure: Callable[[], torch.Tensor], n: Optional[int] = None) -> torch.Tensor:  # type: ignore[override]
+    def step(self, closure: Optional[Callable[[], torch.Tensor]] = None) -> Optional[torch.Tensor]:
         """
         Performs a single optimization step. This is a standard PSO step, followed by a weight adjustment.
 
-        :param n: integer representing which "step number" this step should be treated as in calculating
-            the weight decays
         :param closure: A callable that reevaluates the model and returns the loss.
         :return: the final loss after the step (as calculated by the closure)
         """
+        if closure is None:
+            raise TypeError('Closures are required for Particle Swarm Optimizers')
         # Calculate the new coefficients for the swarm
-        n = n if n is not None else self.current_step
+        n = self.current_step
         w_t = 0.4 * (n - self.num_total_iterations) / self.num_total_iterations**2 + 0.4
         cognitive_t = -3 * n / self.num_total_iterations + 3.5
         social_t = 3 * n / self.num_total_iterations + 0.5

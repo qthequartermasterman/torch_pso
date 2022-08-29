@@ -133,8 +133,13 @@ class DolphinPodParticle(GenericParticle):
         self.worst_known_position = clone_param_groups(self.position)
         self.worst_known_loss_value = -torch.tensor(torch.inf)
 
+        # pod_attractive_force: param_groups object that contains the pod attractive force vector
         self.pod_attractive_force: List[Dict] = []
+        # food_attractive_force: param_groups object that contains the food attractive force vector
         self.food_attractive_force: List[Dict] = []
+
+        self.respawn_after_convergence = False
+        self.respawn_probability = 0.5
 
     def step(self,
              closure: Callable[[], torch.Tensor],
@@ -144,8 +149,6 @@ class DolphinPodParticle(GenericParticle):
              ) -> torch.Tensor:
         """
         Particle will take one step.
-        :param pod_attractive_force: param_groups object that contains the pod attractive force vector
-        :param food_attractive_force: param_groups object that contains the food attractive force vector
         :param closure: A callable that reevaluates the model and returns the loss.
         :param global_best_param_groups: List of param_groups that yield the best found loss globally
         :return:
@@ -182,9 +185,9 @@ class DolphinPodParticle(GenericParticle):
             velocity_group['params'] = new_velocity_params
 
         self._update_params()
-        # if velocity_is_zero and random.random()>.5:
-        #     self.position = _initialize_param_groups(self.param_groups, self.max_param_value, self.min_param_value)
-        #     logging.info('Dolphin Pod Particle converged. Reinitializing.')
+        if self.respawn_after_convergence and velocity_is_zero and random.random() > self.respawn_probability:
+            self.position = _initialize_param_groups(self.param_groups, self.max_param_value, self.min_param_value)
+            logging.info('Dolphin Pod Particle converged. Reinitializing.')
 
         # Calculate new loss after moving and update the best known position if we're in a better spot
         new_loss = closure()
@@ -306,19 +309,24 @@ class DolphinPodOptimizer(GenericPSO):
         self.worst_current_global_loss_value = -torch.tensor(torch.inf)
 
     @torch.no_grad()
-    def step(self, closure: Callable[[], torch.Tensor]) -> torch.Tensor:  # type: ignore[override]
+    def step(self, closure: Optional[Callable[[], torch.Tensor]] = None) -> Optional[torch.Tensor]:
         """
         Performs a single optimization step.
 
         :param closure: A callable that reevaluates the model and returns the loss.
         :return: the final loss after the step (as calculated by the closure)
         """
+        if closure is None:
+            raise TypeError('Closures are required for Particle Swarm Optimizers')
         self.populate_best_known_values(closure)
 
         for particle in self.particles:
             if not isinstance(particle, DolphinPodParticle):
                 raise TypeError(f'Particle for DolphinPodOptimizer must be DolphinPodParticle, not {type(particle)}')
-            self.worst_current_global_loss_value = -torch.tensor(torch.inf)  # Reset the worst particle loss for each step
+
+            # Reset the worst particle loss for each step
+            self.worst_current_global_loss_value = -torch.tensor(torch.inf)
+
             pod_attraction_force: List[Dict] = self._calculate_pod_attraction(particle)
             food_attraction_force: List[Dict] = self._calculate_food_attraction(particle)
             particle.pod_attractive_force = pod_attraction_force
