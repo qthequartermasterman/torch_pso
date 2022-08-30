@@ -26,7 +26,7 @@ def optimizer_tests(func=None, *, ignore: Optional[List[str]] = None):
     def wrapper(optimizer_type, *args, **kwargs):
         if ignore and optimizer_type.__name__ in ignore:
             # These PSO algorithms converge very slowly on this problem, so skip them.
-            pytest.skip()
+            pytest.skip(f'{optimizer_type} is ignored for this test')
         return func(optimizer_type, *args, **kwargs)
 
     return wrapper
