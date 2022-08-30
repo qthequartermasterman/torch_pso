@@ -69,7 +69,7 @@ class GenericParticle(ABC):
         """
         pass
 
-    def _update_params(self):
+    def _update_params(self) -> None:
         # Really crummy way to update the parameter weights in the original model.
         # Simply changing self.param_groups doesn't update the model.
         # Nor does changing its elements or the raw values of 'param' of the elements.
