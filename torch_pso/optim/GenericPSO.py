@@ -12,7 +12,8 @@ def clone_param_group(param_group: Dict) -> Dict:
     :return: cloned param_group dict
     """
     new_group = {key: value for key, value in param_group.items() if key != 'params'}
-    new_group['params'] = [param.detach().clone() for param in param_group['params']]
+    new_group['params'] = [param.clone() for param in param_group['params']]
+    # new_group['params'] = [param.detach().clone() for param in param_group['params']]
     return new_group
 
 
