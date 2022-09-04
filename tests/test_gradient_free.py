@@ -19,9 +19,9 @@ def test_closure_function():
     x = torch.rand((3,))
 
     def closure():
-        print('param', next(net.parameters())[0])
+        # print('param', next(net.parameters())[0])
         loss = net(x)
-        print('loss', loss)
+        # print('loss', loss)
         return loss
 
     loss1 = closure()
@@ -55,7 +55,7 @@ def test_grad_agnostic(optimizer_type: Type[GenericPSO]) -> None:
         def closure():
             # Clear any grads from before the optimization step, since we will be changing the parameters
             loss = criterion(net(x), target)
-            print('loss', loss)
+            # print('loss', loss)
             return loss
 
         if use_grad:
@@ -63,7 +63,7 @@ def test_grad_agnostic(optimizer_type: Type[GenericPSO]) -> None:
             x.requires_grad_(True)
 
         for i in range(15):
-            print(f'{i} before')
+            # print(f'{i} before')
             if use_grad:
                 closure().backward()
             optim.step(closure)

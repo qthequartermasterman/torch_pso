@@ -1,8 +1,36 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from typing import Dict, List, Callable, Type, Iterable, Optional, Any, TypeVar, Sequence, ClassVar
 
 import torch
+from torch import Tensor
 from torch.optim import Optimizer
+
+
+def clamp_param_groups(param_groups: List[Dict],
+                       max_param_value: float | Tensor,
+                       min_param_value: float | Tensor,
+                       inplace=True) -> List[Dict]:
+    if not inplace:
+        param_groups = clone_param_groups(param_groups)
+    for group in param_groups:
+        group['params'] = [torch.clamp(p, min=min_param_value, max=max_param_value) for p in group['params']]
+    return param_groups
+
+
+def compare_param_groups(param_groups_left: List[Dict], param_groups_right: List[Dict]) -> bool:
+    """
+    Check that each param in two param_groups are equal
+    :param param_groups_left: Dict containing param_groups
+    :param param_groups_right: Dict containing param_groups
+    :return: True if param_groups equal else False
+    """
+    for group_left, group_right in zip(param_groups_left, param_groups_right):
+        params_left, params_right = group_left['params'], group_right['params']
+        if any(not torch.allclose(left, right) for left, right in zip(params_left, params_right)):
+            return False
+    return True
 
 
 def clone_param_group(param_group: Dict) -> Dict:
@@ -26,7 +54,7 @@ def clone_param_groups(param_groups: List[Dict]) -> List[Dict]:
     return [clone_param_group(param_group) for param_group in param_groups]
 
 
-def _initialize_param_groups(param_groups: List[Dict], max_param_value, min_param_value) -> List[Dict]:
+def _initialize_param_groups(param_groups: List[Dict], max_param_value: float, min_param_value: float) -> List[Dict]:
     """
     Take a list of param_groups, clone it, and then randomly initialize its parameters with values between
     max_param_value and min_param_value.
@@ -39,7 +67,7 @@ def _initialize_param_groups(param_groups: List[Dict], max_param_value, min_para
     magnitude = max_param_value - min_param_value
     mean_value = (max_param_value + min_param_value) / 2
 
-    def _initialize_params(param):
+    def _initialize_params(param: torch.nn.Parameter) -> torch.nn.Parameter:
         return magnitude * torch.rand_like(param) - magnitude / 2 + mean_value
 
     # Make sure we get a clone, so we don't overwrite the original params in the module
@@ -137,9 +165,10 @@ class GenericPSO(Optimizer):
 
         return closure()  # loss = closure()
 
-    def _update_master_parms(self) -> None:
+    def _update_master_parms(self, new_param_groups: Optional[List[Dict]] = None) -> None:
         """Set the module's parameters to be the best performing ones."""
-        for master_group, best_group in zip(self.param_groups, self.best_known_global_param_groups):
+        new_param_groups = new_param_groups or self.best_known_global_param_groups
+        for master_group, best_group in zip(self.param_groups, new_param_groups):
             clone = clone_param_group(best_group)['params']
             for i in range(len(clone)):
                 master_group['params'][i].data = clone[i].data
