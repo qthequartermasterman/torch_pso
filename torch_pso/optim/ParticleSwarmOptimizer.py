@@ -68,6 +68,9 @@ class Particle(GenericParticle):
         self.cognitive_coefficient = cognitive_coefficient
         self.social_coefficient = social_coefficient
 
+        self.max_param_value = max_param_value
+        self.min_param_value = min_param_value
+
     def step(self, closure: Callable[[], torch.Tensor], global_best_param_groups: List[Dict]) -> torch.Tensor:
         """
         Particle will take one step.
@@ -101,6 +104,7 @@ class Particle(GenericParticle):
                 )
                 new_velocity_params.append(new_velocity)
                 new_position = p + new_velocity
+                new_position = torch.clamp(new_position, min=self.min_param_value, max=self.max_param_value)
                 new_position_params.append(new_position)
                 m.data = new_position.data  # Update the model, so we can use it for calculating loss
             position_group['params'] = new_position_params

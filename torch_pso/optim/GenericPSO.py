@@ -86,6 +86,8 @@ class GenericParticle(ABC):
     def __init__(self, *args, **kwargs):
         self.position: List[Dict] = []
         self.param_groups: List[Dict] = []
+        self.max_param_value: float | Tensor = 1
+        self.min_param_value: float | Tensor = -1
 
     @abstractmethod
     def step(self, closure: Callable[[], torch.Tensor], global_best_param_groups: List[Dict]) -> torch.Tensor:
@@ -105,6 +107,7 @@ class GenericParticle(ABC):
         # for i in range(len(self.position)):
         #     for j in range(len(self.param_groups[i]['params'])):
         #         self.param_groups[i]['params'][j].data = self.param_groups[i]['params'][j].data
+        # self.param_groups = clamp_param_groups(self.param_groups, self.max_param_value, self.min_param_value)
         pass
 
     def set_params(self, params: List[Dict]):
